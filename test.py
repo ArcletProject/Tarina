@@ -15,3 +15,18 @@ def test_generic_isinstance():
     assert generic_isinstance('a', (int, str))
     assert not generic_isinstance(bool, (str, list))
     assert not generic_isinstance({123}, Dict[str, str])
+
+
+def test_lru():
+    """测试 LRU缓存"""
+    from tarina import LRU
+    cache: LRU[str, str] = LRU(3)
+    cache["a"] = "a"
+    cache["b"] = "b"
+    cache["c"] = "c"
+    assert cache.peek_first_item()[1] == "c"
+    _ = cache.get("a", Ellipsis)
+    print(f"\n{cache.items()}")
+    assert cache.peek_first_item()[1] == "a"
+    cache["d"] = "d"
+    assert cache.get("b", Ellipsis) == Ellipsis
