@@ -80,7 +80,7 @@ node_repr(Node* self)
 
 static PyTypeObject NodeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "lru.Node",              /* tp_name */
+    "_lru_c.Node",              /* tp_name */
     sizeof(Node),            /* tp_basicsize */
     0,                       /* tp_itemsize */
     (destructor)node_dealloc,/* tp_dealloc */
@@ -626,7 +626,7 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.setdefault(key, default=None) -> If L has key return its value, otherwise insert key with a value of default and return default")},
     {"pop", (PyCFunction)LRU_pop, METH_VARARGS,
                     PyDoc_STR("L.pop(key[, default]) -> If L has key return its value and remove it from L, otherwise return default. If default is not given and key is not in L, a KeyError is raised.")},
-    {"popitem", (PyCFunctionWithKeywords)LRU_popitem, METH_VARARGS | METH_KEYWORDS,
+    {"popitem", (PyCFunction)LRU_popitem, METH_VARARGS | METH_KEYWORDS,
                     PyDoc_STR("L.popitem([least_recent=True]) -> Returns and removes a (key, value) pair. The pair returned is the least-recently used if least_recent is true, or the most-recently used if false.")},
     {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
                     PyDoc_STR("L.set_size() -> set size of LRU")},
@@ -795,13 +795,13 @@ moduleinit(void)
 
 #if PY_MAJOR_VERSION < 3
     PyMODINIT_FUNC
-    initlru(void)
+    init_lru_c(void)
     {
         moduleinit();
     }
 #else
     PyMODINIT_FUNC
-    PyInit_lru(void)
+    PyInit__lru_c(void)
     {
         return moduleinit();
     }
