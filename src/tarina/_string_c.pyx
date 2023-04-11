@@ -83,4 +83,4 @@ def split_once(str text, tuple separates, char crlf=True):
         else:
             out_text.append(ch)
             escape = 0
-    return ''.join(out_text), text[index + 1:]
+    return ''.join(out_text), text[index:]

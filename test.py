@@ -30,3 +30,31 @@ def test_lru():
     assert cache.peek_first_item()[1] == "a"
     cache["d"] = "d"
     assert cache.get("b", Ellipsis) == Ellipsis
+
+
+def test_split_once():
+    """测试单次分割函数, 能以引号扩起空格, 并允许保留引号"""
+    from tarina import split_once
+    assert split_once("arclet-alconna bar", (' ',)) == ('arclet-alconna', 'bar')
+    text1 = "rrr b bbbb"
+    text2 = "\'rrr b\' bbbb"
+    text3 = "\\\'rrr b\\\' bbbb"
+    text4 = "\\\'rrr \\b\\\' bbbb"
+    assert split_once(text1, (' ',)) == ('rrr', 'b bbbb')
+    assert split_once(text2, (' ',)) == ("rrr b", 'bbbb')
+    assert split_once(text3, (' ',)) == ("'rrr b'", 'bbbb')
+    assert split_once(text4, (' ',)) == ("'rrr \\b'", 'bbbb')  # 不消除其他转义字符斜杠
+
+
+def test_split():
+    """测试分割函数, 能以引号扩起空格, 并允许保留引号"""
+    from tarina import split
+
+    text1 = "rrr b bbbb"
+    text2 = "\'rrr b\' bbbb"
+    text3 = "\\\'rrr b\\\' bbbb"
+    assert split(text1, (' ',)) == ["rrr", "b", "bbbb"]
+    assert split(text2, (' ',)) == ["rrr b", "bbbb"]
+    assert split(text3, (' ',)) == ["'rrr b'", "bbbb"]
+    assert split("", (' ',)) == []
+    assert split("  ", (' ',)) == []
