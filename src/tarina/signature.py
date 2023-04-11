@@ -56,7 +56,11 @@ except ImportError:
         if _locals is None:
             _locals = obj_locals
 
-        return {key: eval(value, _globals, _locals) if isinstance(value, str) else value for key, value in ann.items()}  # type: ignore
+        return {
+            key: eval(value, _globals, _locals)  # type: ignore
+            if isinstance(value, str) else value
+            for key, value in ann.items()
+        }
 
 
 @functools.lru_cache(4096)

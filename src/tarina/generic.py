@@ -3,9 +3,10 @@ from __future__ import annotations
 import contextlib
 import sys
 import types
-from typing import Any, List, TypeVar, Literal, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List, Literal, TypeVar, Union
 
-from typing_extensions import Annotated, get_args, get_origin as typing_ext_get_origin
+from typing_extensions import Annotated, get_args
+from typing_extensions import get_origin as typing_ext_get_origin
 
 if TYPE_CHECKING:
     from types import GenericAlias  # noqa
@@ -13,7 +14,9 @@ else:
     GenericAlias: type = type(List[int])
 
 AnnotatedType: type = type(Annotated[int, lambda x: x > 0])
-Unions = (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
+Unions = (
+    (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
+)
 
 
 def get_origin(obj: Any) -> Any:

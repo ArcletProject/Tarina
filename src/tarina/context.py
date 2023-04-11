@@ -7,6 +7,7 @@ from typing import Generic, TypeVar
 T = TypeVar("T")
 D = TypeVar("D")
 
+
 class ContextModel(Generic[T]):
     current_ctx: ContextVar[T]
 
