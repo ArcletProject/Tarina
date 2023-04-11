@@ -1,0 +1,6 @@
+graft src/tarina
+global-exclude *.pyc
+global-exclude *.cache
+include src/tarina/*.c
+exclude src/tarina/*.pyd
+exclude src/tarina/*.so
