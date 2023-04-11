@@ -4,12 +4,9 @@ on:
   push:
     branches:
       - main
-      - master
   pull_request:
-    branches:
-      - master
-      - main
-  workflow_dispatch:
+  release:
+    types: [published]
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
@@ -91,13 +88,15 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
 
-  pypi_upload:
-    name: Publish to PyPI
-    needs: [build_wheels, build_sdist]
+  release:
+    name: Release
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    if: github.event_name == 'release'
+    needs: [build_wheels, build_sdist]
+    permissions:
+      contents: write
+      packages: write
     steps:
-    - uses: actions/setup-python@v4
     - uses: actions/download-artifact@v3
       with:
         name: artifact
@@ -108,3 +107,8 @@ jobs:
         verbose: true
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
+    - name: upload release asset
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} dist/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
