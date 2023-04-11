@@ -35,7 +35,7 @@ def test_lru():
 def test_split_once():
     """测试单次分割函数, 能以引号扩起空格, 并允许保留引号"""
     from tarina import split_once
-    assert split_once("arclet-alconna bar", (' ',)) == ('arclet-alconna', 'bar')
+    assert split_once("arclet-alconna", (' ',)) == ('arclet-alconna', '')
     text1 = "rrr b bbbb"
     text2 = "\'rrr b\' bbbb"
     text3 = "\\\'rrr b\\\' bbbb"
