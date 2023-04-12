@@ -4,7 +4,10 @@
 
 from cpython.object cimport PyObject, Py_SIZE
 from cpython.unicode cimport PyUnicode_Join, PyUnicode_Split, PyUnicode_GET_LENGTH
-from cpython.list cimport PyList_Append
+from cpython.list cimport PyList_Append, PyList_SET_ITEM
+
+cdef extern from "Python.h":
+    Py_UCS4 PyUnicode_READ_CHAR(object s, Py_ssize_t i)
 
 cdef extern from "_op.h":
     PyObject* tupleitem(object a, Py_ssize_t i)
@@ -41,7 +44,7 @@ def split(str text, tuple separates, char crlf=True):
     cdef Py_ssize_t length = PyUnicode_GET_LENGTH(text)
 
     while i < length:
-        ch = text[i]
+        ch = PyUnicode_READ_CHAR(text, i)
         i += 1
         if ch == 92:  # \\
             escape = 1
@@ -55,7 +58,7 @@ def split(str text, tuple separates, char crlf=True):
                 PyList_Append(result, ch)
                 continue
             if escape:
-                result[-1] = ch
+                PyList_SET_ITEM(result, Py_SIZE(result)-1 , ch)
         elif (quotation == 0 and contains(separates, ch)) or (crlf and set_contains_key(CRLF, ch)):
             if result and result[-1] != '\1':
                 PyList_Append(result, '\1')
@@ -78,8 +81,14 @@ def split_once(str text, tuple separates, char crlf=True):
     cdef Py_ssize_t length = PyUnicode_GET_LENGTH(text)
 
     while index < length:
-        ch = text[index]
+        ch = PyUnicode_READ_CHAR(text, index)
         index += 1
+        if quotation == 0 and (contains(separates, ch) or (crlf and set_contains_key(CRLF, ch))):
+            sep = 1
+            continue
+        if sep == 1:
+            index -= 1
+            break
         if ch == 92:  # \\
             escape = 1
             PyList_Append(out_text, ch)
@@ -92,14 +101,8 @@ def split_once(str text, tuple separates, char crlf=True):
                 PyList_Append(out_text, ch)
                 continue
             if escape:
-                out_text[-1] = ch
-        elif (contains(separates, ch) or (crlf and set_contains_key(CRLF, ch))) and quotation == 0:
-            sep = 1
-            continue
+                PyList_SET_ITEM(out_text, Py_SIZE(out_text) - 1, ch)
         else:
-            if sep == 1:
-                index -= 1
-                break
             PyList_Append(out_text, ch)
             escape = 0
     return PyUnicode_Join('', out_text), text[index:]

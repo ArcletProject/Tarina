@@ -47,6 +47,7 @@ def test_split_once():
 
     assert split_once("'rrr b\" b' bbbb", (' ',)) == ("rrr b\" b", 'bbbb')
     assert split_once("rrr  bbbb", (' ',)) == ("rrr", 'bbbb')
+    assert split_once("rrr 'bbb'", (' ',)) == ("rrr", "'bbb'")
 
 
 def test_split():

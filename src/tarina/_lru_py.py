@@ -31,11 +31,19 @@ class LRU(Generic[_KT, _VT]):
     def clear(self) -> None:
         self.__cache.clear()
 
-    def get(self, key: _KT, default: _VT | _T) -> _VT | _T:
+    @overload
+    def get(self, key: _KT) -> _VT | None:
+        ...
+
+    @overload
+    def get(self, key: _KT, instead: _VT | _T) -> _VT | _T:
+        ...
+
+    def get(self, key: _KT, instead: _VT | _T | None = None):
         if key in self.__cache:
             self.__cache.move_to_end(key, last=False)
             return self.__cache[key]
-        return default
+        return instead
 
     def get_size(self) -> int:
         return self.__max
@@ -59,7 +67,7 @@ class LRU(Generic[_KT, _VT]):
         return self.items()[-1] if self.__cache else None
 
     @overload
-    def pop(self, key: _KT) -> _VT:
+    def pop(self, key: _KT) -> _VT | None:
         ...
 
     @overload

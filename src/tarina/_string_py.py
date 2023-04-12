@@ -18,6 +18,12 @@ def split_once(text: str, separates: tuple[str, ...], crlf: bool = True):
     text = text.lstrip()
     for char in text:
         index += 1
+        if (char in separates or (crlf and char in CRLF)) and not quotation:
+            sep = True
+            continue
+        if sep:
+            index -= 1
+            break
         if char == "\\":
             escape = True
             out_text += char
@@ -31,13 +37,7 @@ def split_once(text: str, separates: tuple[str, ...], crlf: bool = True):
                 continue
             if escape:
                 out_text = out_text[:-1] + char
-        elif (char in separates or (crlf and char in CRLF)) and not quotation:
-            sep = True
-            continue
         else:
-            if sep:
-                index -= 1
-                break
             out_text += char
             escape = False
     return out_text, text[index:]

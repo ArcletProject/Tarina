@@ -430,12 +430,15 @@ LRU_pop(LRU *self, PyObject *args)
     if (result)
         /* result != NULL, delete it from dict by key */
         lru_ass_sub(self, key, NULL);
-    else if (default_obj) {
-        /* result == NULL, i.e. key missing, and default_obj given */
-        PyErr_Clear();
-        Py_INCREF(default_obj);
-        result = default_obj;
+        return result;
+
+    if (!default_obj) {
+        Py_RETURN_NONE;
     }
+    /* result == NULL, i.e. key missing, and default_obj given */
+    PyErr_Clear();
+    Py_INCREF(default_obj);
+    result = default_obj;
     /* Otherwise (key missing, and default_obj not given [i.e. == NULL]), the
      * call to lru_subscript (at the location marked by "Trying to access the
      * item by key" in the comments) has already generated the appropriate
@@ -621,7 +624,7 @@ static PyMethodDef LRU_methods[] = {
     {"has_key",	(PyCFunction)LRU_contains, METH_VARARGS,
                     PyDoc_STR("L.has_key(key) -> Check if key is there in L")},
     {"get",	(PyCFunction)LRU_get, METH_VARARGS,
-                    PyDoc_STR("L.get(key, instead) -> If L has key return its value, otherwise instead")},
+                    PyDoc_STR("L.get(key[, instead]) -> If L has key return its value, otherwise instead")},
     {"setdefault", (PyCFunction)LRU_setdefault, METH_VARARGS,
                     PyDoc_STR("L.setdefault(key, default=None) -> If L has key return its value, otherwise insert key with a value of default and return default")},
     {"pop", (PyCFunction)LRU_pop, METH_VARARGS,
@@ -629,7 +632,7 @@ static PyMethodDef LRU_methods[] = {
     {"popitem", (PyCFunction)LRU_popitem, METH_VARARGS | METH_KEYWORDS,
                     PyDoc_STR("L.popitem([least_recent=True]) -> Returns and removes a (key, value) pair. The pair returned is the least-recently used if least_recent is true, or the most-recently used if false.")},
     {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
-                    PyDoc_STR("L.set_size() -> set size of LRU")},
+                    PyDoc_STR("L.set_size(size) -> set size of LRU")},
     {"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
                     PyDoc_STR("L.get_size() -> get size of LRU")},
     {"clear", (PyCFunction)LRU_clear, METH_NOARGS,
