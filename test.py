@@ -45,6 +45,9 @@ def test_split_once():
     assert split_once(text3, (' ',)) == ("'rrr b'", 'bbbb')
     assert split_once(text4, (' ',)) == ("'rrr \\b'", 'bbbb')  # 不消除其他转义字符斜杠
 
+    assert split_once("'rrr b\" b' bbbb", (' ',)) == ("rrr b\" b", 'bbbb')
+    assert split_once("rrr  bbbb", (' ',)) == ("rrr", 'bbbb')
+
 
 def test_split():
     """测试分割函数, 能以引号扩起空格, 并允许保留引号"""

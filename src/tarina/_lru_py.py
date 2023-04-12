@@ -132,6 +132,7 @@ class LRU(Generic[_KT, _VT]):
             self.__cache[key] = value
             return
         self.__cache[key] = value
+        self.__cache.move_to_end(key, last=False)
         self.__size += 1
         if self.__max < self.__size:
             _k, _v = self.__cache.popitem(last=True)

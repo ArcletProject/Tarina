@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-QUOTATION = {"'", '"', "’", "“"}
+QUOTATION = {"'", '"'}
+CRLF = {"\n", "\r"}
 
 
 def split_once(text: str, separates: tuple[str, ...], crlf: bool = True):
@@ -13,7 +14,7 @@ def split_once(text: str, separates: tuple[str, ...], crlf: bool = True):
     Returns:
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
-    index, out_text, quotation, escape = 0, "", "", False
+    index, out_text, quotation, escape, sep = 0, "", "", False, False
     text = text.lstrip()
     for char in text:
         index += 1
@@ -23,15 +24,20 @@ def split_once(text: str, separates: tuple[str, ...], crlf: bool = True):
         elif char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
             if not quotation:
                 quotation = char
-                if escape:
-                    out_text = out_text[:-1] + char
             elif char == quotation:
                 quotation = ""
-                if escape:
-                    out_text = out_text[:-1] + char
-        elif (char in separates or (crlf and char in {"\n", "\r"})) and not quotation:
-            break
+            else:
+                out_text += char
+                continue
+            if escape:
+                out_text = out_text[:-1] + char
+        elif (char in separates or (crlf and char in CRLF)) and not quotation:
+            sep = True
+            continue
         else:
+            if sep:
+                index -= 1
+                break
             out_text += char
             escape = False
     return out_text, text[index:]
@@ -56,13 +62,14 @@ def split(text: str, separates: tuple[str, ...], crlf: bool = True):
         elif char in QUOTATION:
             if not quotation:
                 quotation = char
-                if escape:
-                    result = result[:-1] + char
             elif char == quotation:
                 quotation = ""
-                if escape:
-                    result = result[:-1] + char
-        elif (not quotation and char in separates) or (crlf and char in {"\n", "\r"}):
+            else:
+                result += char
+                continue
+            if escape:
+                result = result[:-1] + char
+        elif (not quotation and char in separates) or (crlf and char in CRLF):
             if result and result[-1] != "\0":
                 result += "\0"
         else:

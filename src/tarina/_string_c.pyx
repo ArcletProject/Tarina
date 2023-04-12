@@ -2,15 +2,25 @@
 # cython: cdivision=True
 # cython: initializedcheck=False
 
-cdef inline int contains(Py_UCS4 ch, tuple chs):
+from cpython.object cimport PyObject, Py_SIZE
+from cpython.unicode cimport PyUnicode_Join, PyUnicode_Split, PyUnicode_GET_LENGTH
+from cpython.list cimport PyList_Append
+
+cdef extern from "_op.h":
+    PyObject* tupleitem(object a, Py_ssize_t i)
+    bint set_contains_key(object anyset, object key) except -1
+
+cdef inline int contains(tuple chs, Py_UCS4 ch):
     cdef Py_ssize_t i = 0
-    cdef Py_ssize_t length = len(chs)
+    cdef Py_ssize_t length = Py_SIZE(chs)
     while i < length:
-        if ch == chs[i]:
+        if ch == <object>tupleitem(chs, i):
             return 1
         i += 1
     return 0
 
+cdef set QUOTES = {'"', '\''}
+cdef set CRLF = {'\r', '\n'}
 
 def split(str text, tuple separates, char crlf=True):
     """尊重引号与转义的字符串切分
@@ -28,30 +38,33 @@ def split(str text, tuple separates, char crlf=True):
     cdef Py_UCS4 quotation = 0
     cdef Py_UCS4 ch = 0
     cdef Py_ssize_t i = 0
-    cdef Py_ssize_t length = len(text)
+    cdef Py_ssize_t length = PyUnicode_GET_LENGTH(text)
 
     while i < length:
         ch = text[i]
         i += 1
         if ch == 92:  # \\
             escape = 1
-            result.append(ch)
-        elif contains(ch, ('"', "'")):
+            PyList_Append(result, ch)
+        elif set_contains_key(QUOTES, ch):
             if quotation == 0:
                 quotation = ch
-                if escape:
-                    result[-1] = ch
             elif ch == quotation:
                 quotation = 0
-                if escape:
-                    result[-1] = ch
-        elif (quotation == 0 and ch in separates) or (crlf and contains(ch, ('\r', '\n'))):
-            if result and result[-1] != '\0':
-                result.append('\0')
+            else:
+                PyList_Append(result, ch)
+                continue
+            if escape:
+                result[-1] = ch
+        elif (quotation == 0 and contains(separates, ch)) or (crlf and set_contains_key(CRLF, ch)):
+            if result and result[-1] != '\1':
+                PyList_Append(result, '\1')
         else:
-            result.append(ch)
+            PyList_Append(result, ch)
             escape = 0
-    return ''.join(result).split('\0') if result else []
+    if PyUnicode_GET_LENGTH(result) == 0:
+        return []
+    return PyUnicode_Split(PyUnicode_Join('', result), '\1', -1)
 
 
 def split_once(str text, tuple separates, char crlf=True):
@@ -61,26 +74,32 @@ def split_once(str text, tuple separates, char crlf=True):
     cdef Py_UCS4 quotation = 0
     cdef Py_UCS4 ch = 0
     cdef char escape = 0
-    cdef Py_ssize_t length = len(text)
+    cdef char sep = 0
+    cdef Py_ssize_t length = PyUnicode_GET_LENGTH(text)
 
     while index < length:
         ch = text[index]
         index += 1
         if ch == 92:  # \\
             escape = 1
-            out_text.append(ch)
-        elif contains(ch, ('"', "'")):  # 遇到引号括起来的部分跳过分隔
+            PyList_Append(out_text, ch)
+        elif set_contains_key(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
             if quotation == 0:
                 quotation = ch
-                if escape:
-                    out_text[-1] = ch
             elif ch == quotation:
                 quotation = 0
-                if escape:
-                    out_text[-1] = ch
-        elif (ch in separates or (crlf and contains(ch, ('\n', '\r')))) and quotation == 0:
-            break
+            else:
+                PyList_Append(out_text, ch)
+                continue
+            if escape:
+                out_text[-1] = ch
+        elif (contains(separates, ch) or (crlf and set_contains_key(CRLF, ch))) and quotation == 0:
+            sep = 1
+            continue
         else:
-            out_text.append(ch)
+            if sep == 1:
+                index -= 1
+                break
+            PyList_Append(out_text, ch)
             escape = 0
-    return ''.join(out_text), text[index:]
+    return PyUnicode_Join('', out_text), text[index:]
