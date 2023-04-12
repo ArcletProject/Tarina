@@ -10,9 +10,10 @@
 #define PERTURB_SHIFT 5
 
 
-static PyObject * tupleitem(PyTupleObject *a, Py_ssize_t i)
+static PyObject * tupleitem(PyObject *a, Py_ssize_t i)
 {
-    return Py_NewRef(a->ob_item[i]);
+    Py_INCREF(((PyTupleObject*)a)->ob_item[i]);
+    return ((PyTupleObject*)a)->ob_item[i];
 }
 
 static setentry *
@@ -62,7 +63,7 @@ set_lookkey(PySetObject *so, PyObject *key, Py_hash_t hash)
 
 
 static int
-set_contains_key(PySetObject *so, PyObject *key)
+set_contains_key(PyObject *so, PyObject *key)
 {
     Py_hash_t hash;
     setentry *entry;
@@ -74,7 +75,7 @@ set_contains_key(PySetObject *so, PyObject *key)
             return -1;
     }
 
-    entry = set_lookkey(so, key, hash);
+    entry = set_lookkey(((PySetObject *)so), key, hash);
     if (entry != NULL)
         return entry->key != NULL;
     return -1;
