@@ -1,0 +1,7 @@
+{
+  "lang": {
+    "scope_error": "{target} 不是合法的语种",
+    "type_error": "{target} 不是合法的类型",
+    "name_error": "{target} 不是合法的名称"
+  }
+}

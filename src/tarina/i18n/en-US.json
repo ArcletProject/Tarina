@@ -1,0 +1,7 @@
+{
+  "lang": {
+    "scope_error": "{target} is not a valid language scope",
+    "type_error": "{target} is not a valid type",
+    "name_error": "{target} is not a valid name"
+  }
+}
