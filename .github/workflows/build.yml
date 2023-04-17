@@ -2,11 +2,15 @@ name: Build
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'build/*'
   pull_request:
+    types:
+      - opened
+    paths:
+      - '.github/workflows/**'
+      - 'src/tarina/*_c.c'
+      - 'src/tarina/*_c.pyx'
   release:
     types: [published]
 
