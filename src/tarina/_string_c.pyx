@@ -10,17 +10,8 @@ cdef extern from "Python.h":
     Py_UCS4 PyUnicode_READ_CHAR(object s, Py_ssize_t i)
 
 cdef extern from "_op.h":
-    PyObject* tupleitem(object a, Py_ssize_t i)
+    bint contains(object chs, Py_UCS4 ch)
     bint set_contains_key(object anyset, object key) except -1
-
-cdef inline int contains(tuple chs, Py_UCS4 ch):
-    cdef Py_ssize_t i = 0
-    cdef Py_ssize_t length = Py_SIZE(chs)
-    while i < length:
-        if ch == <object>tupleitem(chs, i):
-            return 1
-        i += 1
-    return 0
 
 cdef set QUOTES = {'"', '\''}
 cdef set CRLF = {'\r', '\n'}

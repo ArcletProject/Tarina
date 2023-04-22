@@ -9,12 +9,32 @@
 /* This must be >= 1 */
 #define PERTURB_SHIFT 5
 
+static inline Py_ssize_t tuplesize(PyObject *ob) {
+    PyVarObject *var_ob = (PyVarObject*)ob;
+    return var_ob->ob_size;
+}
 
-static PyObject * tupleitem(PyObject *a, Py_ssize_t i)
+static inline PyObject * tupleitem(PyObject *a, Py_ssize_t i)
 {
-    Py_INCREF(((PyTupleObject*)a)->ob_item[i]);
     return ((PyTupleObject*)a)->ob_item[i];
 }
+
+
+static int contains(PyObject *chs, Py_UCS4 ch) {
+    Py_ssize_t i = 0;
+    Py_ssize_t length = tuplesize(chs);
+    while (1) {
+        if (i >= length) {
+            return 0;
+        }
+        if (ch == PyUnicode_READ_CHAR(tupleitem(chs, i), 0)) {
+            return 1;
+        }
+        i++;
+    }
+    return 0;
+}
+
 
 static setentry *
 set_lookkey(PySetObject *so, PyObject *key, Py_hash_t hash)

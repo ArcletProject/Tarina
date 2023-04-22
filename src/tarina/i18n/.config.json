@@ -1,6 +1,9 @@
 {
   "default": "zh-CN",
-  "immutable": [
+  "frozen": [
+    "lang"
+  ],
+  "require": [
     "lang"
   ]
 }
