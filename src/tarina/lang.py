@@ -1,10 +1,54 @@
 from __future__ import annotations
-from typing import Final, final, Any
-from typing_extensions import Self
+from typing import Final, final, Any, TypedDict
+from typing_extensions import Self, NotRequired
 from pathlib import Path
 import json
+import locale
+import sys
 
 root_dir: Final[Path] = Path(__file__).parent / "i18n"
+WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name == "nt")
+
+
+class _LangDict(TypedDict):
+    default: NotRequired[str]
+    frozen: NotRequired[list[str]]
+    require: NotRequired[list[str]]
+
+
+def _get_win_locale_with_ctypes() -> str | None:
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    lcid: int = kernel32.GetUserDefaultUILanguage()
+    return locale.windows_locale.get(lcid)
+
+
+def _get_win_locale_from_registry() -> str | None:
+    import winreg
+
+    with contextlib.suppress(Exception):
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER, r"Control Panel\International"
+        ) as key:
+            if lcid := winreg.QueryValueEx(key, "Locale")[0]:
+                return locale.windows_locale.get(int(lcid, 16))
+
+
+if WINDOWS:
+    try:
+        import ctypes
+
+        _get_win_locale = _get_win_locale_with_ctypes
+    except ImportError:
+        _get_win_locale = _get_win_locale_from_registry
+
+
+def get_locale() -> str | None:
+    if WINDOWS:
+        return _get_win_locale()
+
+    return locale.getlocale(locale.LC_MESSAGES)[0]
 
 
 def _get_config(root: Path) -> dict[str, Any]:
@@ -46,14 +90,28 @@ class _LangConfig:
         self.__scope: str = __config["default"]
         self.__frozen: list[str] = __config["frozen"]
         self.__require: list[str] = __config["require"]
-        self.__scopes = _get_scopes(root_dir)
-        self.__langs = {t: _get_lang(root_dir, t) for t in self.__scopes}
+        self.__langs = {t.replace("_", "-"): _get_lang(root_dir, t) for t in _get_scopes(root_dir)}
+        self.__scopes = set(self.__langs.keys())
+        self.select_local()
 
     @property
     def scopes(self):
         return self.__scopes
 
-    def scope(self, item: str) -> Self:
+    @property
+    def current(self):
+        return self.__scope
+
+    def select_local(self):
+        """
+        依据系统语言尝试自动选择语言
+        """
+        if (lc := get_locale()) and lc.replace("_", "-") in self.__langs:
+            self.__scope = lc.replace("_", "-")
+        return self
+
+    def select(self, item: str) -> Self:
+        item = item.replace("_", "-")
         if item not in self.__langs:
             raise ValueError(self.require("lang", "scope_error").format(target=item))
         self.__scope = item
@@ -66,60 +124,42 @@ class _LangConfig:
         with (_root / ".config.json").open("w+", encoding="utf-8") as f:
             json.dump(config, f, ensure_ascii=False, indent=2)
 
-    def __getattr__(self, item: str):
-        _lang = self.__langs[self.__scope]
-        if item not in _lang:
-            raise ValueError(
-                _lang["lang"]["type_error"].format(target=item, scope=self.__scope)
-            )
-
-        class _getter:
-            def __init__(_self, prefix: str):
-                _self.prefix = prefix
-
-        def __getattr__(_self, _item: str):
-            _config = _lang[_self.prefix]
-            if not _config.get(_item):
-                raise AttributeError(
-                    _lang["lang"]["name_error"].format(
-                        target=_item, scope=self.__scope, type=_self.prefix
-                    )
-                )
-            return _config[_item]
-
-        return type(
-            f"{self.__scope}_{item}_getter", (_getter,), {"__getattr__": __getattr__}
-        )(item)
-
-    def load_file(self, filepath: Path):
-        _type = filepath.stem
-        if _type in self.__scopes:
-            self.__langs[_type] = merge(
-                _get_lang(filepath.parent, _type), self.__langs[_type], self.__frozen
+    def load_data(self, scope: str, data: dict[str, dict[str, str]]):
+        if scope in self.__langs:
+            self.__langs[scope] = merge(
+                data, self.__langs[scope], self.__frozen
             )
         else:
-            self.__scopes.append(_type)
-            self.__langs[_type] = _get_lang(filepath.parent, _type)
+            self.__scopes.add(scope)
+            self.__langs[scope] = data
         for key in self.__require:
-            t, n = key.split(".", 1)
-            if t not in self.__langs[_type]:
+            parts = key.split(".", 1)
+            t = parts[0]
+            n = parts[1] if len(parts) > 1 else None
+            if t not in self.__langs[scope]:
                 raise KeyError(
-                    self.require("lang", "miss_require_type", _type).format(
-                        scope=_type, target=t
+                    self.require("lang", "miss_require_type", scope).format(
+                        scope=scope, target=t
                     )
                 )
-            if n and n not in self.__langs[_type][t]:
+            if n and n not in self.__langs[scope][t]:
                 raise KeyError(
-                    self.require("lang", "miss_require_name", _type).format(
-                        scope=_type, type=t, target=n
+                    self.require("lang", "miss_require_name", scope).format(
+                        scope=scope, type=t, target=n
                     )
                 )
 
-    def load(self, root: Path):
-        config = _get_config(root)
+    def load_file(self, filepath: Path):
+        return self.load_data(filepath.stem, _get_lang(filepath.parent, filepath.stem))
+
+    def load_config(self, config: _LangDict):
         self.__scope = config.get("default", self.__scope)
         self.__frozen.extend(config.get("frozen", []))
         self.__require.extend(config.get("require", []))
+        self.select_local()
+
+    def load(self, root: Path):
+        self.load_config(_get_config(root))
         for i in root.iterdir():
             if i.is_file() and not i.name.startswith("."):
                 continue
@@ -135,6 +175,8 @@ class _LangConfig:
             _types = self.__langs[scope][_type]
         elif _type in self.__langs[self.__scope]:
             _types = self.__langs[self.__scope][_type]
+        elif _type in self.__langs[(default := _get_config(root_dir)["default"])]:
+            _types = self.__langs[default][_type]
         else:
             raise ValueError(
                 self.__langs[scope]["lang"]["type_error"].format(
@@ -145,6 +187,8 @@ class _LangConfig:
             return _types[_name]
         elif _name in self.__langs[self.__scope][_type]:
             return self.__langs[self.__scope][_type][_name]
+        elif _name in self.__langs[(default := _get_config(root_dir)["default"])][_type]:
+            return self.__langs[default][_type][_name]
         else:
             raise ValueError(
                 self.__langs[scope]["lang"]["name_error"].format(
@@ -173,13 +217,3 @@ class _LangConfig:
 lang: _LangConfig = _LangConfig()
 
 __all__ = ["lang"]
-
-if __name__ == "__main__":
-    print(lang.scopes)
-    print(lang.lang.name_error)
-    print(lang.require("lang", "name_error"))
-    print(lang.require("lang", "name_error", "en-US"))
-    print(lang.scope("en-US"))
-    print(lang.lang.name_error)
-    print(lang.lang.type_error)
-    print(lang.lang.scope_error)

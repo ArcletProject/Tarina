@@ -62,3 +62,28 @@ def test_split():
     assert split(text3, (' ',)) == ["'rrr b'", "bbbb"]
     assert split("", (' ',)) == []
     assert split("  ", (' ',)) == []
+
+
+def test_lang():
+    """测试 i18n """
+    from tarina import lang
+
+    assert lang.scopes == {"zh-CN", "en-US"}
+    lang.select("zh-CN")
+    assert lang.current == "zh-CN"
+    assert lang.require("lang", "name_error") == "'{target}' 在 '{scope}:{type}' 不是合法的名称"
+    assert lang.require("lang", "name_error", "en-US") == "'{target}' is not a valid name in '{scope}:{type}'"
+    lang.select("en-US")
+    assert lang.current == "en-US"
+    try:
+        lang.select("ru-RU")
+    except ValueError as e:
+        assert str(e) == "'ru-RU' is not a valid language scope"
+    try:
+        lang.load_data("test", {})
+    except KeyError as e:
+        assert str(e) == '"lang file \'test\' missed require type \'lang\'"'
+    lang.load_data("test", {"lang": {"name_error": "test"}})
+    lang.select("test")
+    assert lang.require("lang", "name_error") == "test"
+    assert lang.require("lang", "scope_error") == "'{target}' 不是合法的语种"
