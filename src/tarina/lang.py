@@ -161,7 +161,7 @@ class _LangConfig:
     def load(self, root: Path):
         self.load_config(_get_config(root))
         for i in root.iterdir():
-            if i.is_file() and not i.name.startswith("."):
+            if not i.is_file() or i.name.startswith("."):
                 continue
             self.load_file(i)
 
