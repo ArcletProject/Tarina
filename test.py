@@ -103,3 +103,11 @@ def test_init_spec():
         return user
 
     assert add_user("test", age=1) == User("test", 1)
+
+
+def test_date_parser():
+    from tarina import DateParser
+    from datetime import datetime
+
+    assert DateParser.parse("2021-01-01") == datetime(2021, 1, 1)
+    assert DateParser.parse("2021-01-01 12:34:56") == datetime(2021, 1, 1, 12, 34, 56)
