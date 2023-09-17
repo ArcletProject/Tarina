@@ -1,10 +1,14 @@
 from __future__ import annotations
-from typing import Final, final, Any, TypedDict
-from typing_extensions import Self, NotRequired
-from pathlib import Path
+
+import contextlib
 import json
 import locale
+import os
 import sys
+from pathlib import Path
+from typing import Any, Final, TypedDict, final
+
+from typing_extensions import NotRequired, Self
 
 root_dir: Final[Path] = Path(__file__).parent / "i18n"
 WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name == "nt")
@@ -25,7 +29,7 @@ def _get_win_locale_with_ctypes() -> str | None:
 
 
 def _get_win_locale_from_registry() -> str | None:
-    import winreg
+    import winreg  # noqa
 
     with contextlib.suppress(Exception):
         with winreg.OpenKey(
