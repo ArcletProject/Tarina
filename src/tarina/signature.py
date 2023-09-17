@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import Callable, Any, Mapping
+from typing import Any, Callable, Mapping
 
 
 @functools.lru_cache(4096)

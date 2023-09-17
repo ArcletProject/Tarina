@@ -12,7 +12,7 @@ from typing import (
     overload,
 )
 
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, Concatenate
 
 from .guard import is_async
 
@@ -62,14 +62,14 @@ def init_spec(fn: Callable[P, T]) -> Callable[[Callable[[T], R]], Callable[P, R]
 @overload
 def init_spec(
     fn: Callable[P, T], is_method: Literal[True]
-) -> Callable[[Callable[[Any, T], R]], Callable[P, R]]:
+) -> Callable[[Callable[[Any, T], R]], Callable[Concatenate[Any, P], R]]:
     ...
 
 
 def init_spec(  # type: ignore
     fn: Callable[P, T], is_method: bool = False
-) -> Callable[[Callable[[T], R] | Callable[[Any, T], R]], Callable[P, R]]:
-    def wrapper(func: Callable[[T], R] | Callable[[Any, T], R]) -> Callable[P, R]:
+) -> Callable[[Callable[[T], R] | Callable[[Any, T], R]], Callable[P, R] | Callable[Concatenate[Any, P], R]]:
+    def wrapper(func: Callable[[T], R] | Callable[[Any, T], R]) -> Callable[P, R] | Callable[Concatenate[Any, P], R]:
         def inner(*args: P.args, **kwargs: P.kwargs):
             if is_method:
                 return func(args[0], fn(*args[1:], **kwargs))  # type: ignore

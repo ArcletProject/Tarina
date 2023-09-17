@@ -1,12 +1,4 @@
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Hashable,
-    Iterable,
-    TypeVar,
-    overload,
-)
+from typing import Any, Callable, Generic, Hashable, Iterable, TypeVar, overload
 
 _KT = TypeVar("_KT", bound=Hashable)
 _VT = TypeVar("_VT")

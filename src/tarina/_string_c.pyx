@@ -2,9 +2,10 @@
 # cython: cdivision=True
 # cython: initializedcheck=False
 
-from cpython.object cimport PyObject, Py_SIZE
-from cpython.unicode cimport PyUnicode_Join, PyUnicode_Split, PyUnicode_GET_LENGTH
 from cpython.list cimport PyList_Append, PyList_SET_ITEM
+from cpython.object cimport Py_SIZE, PyObject
+from cpython.unicode cimport PyUnicode_GET_LENGTH, PyUnicode_Join, PyUnicode_Split
+
 
 cdef extern from "Python.h":
     Py_UCS4 PyUnicode_READ_CHAR(object s, Py_ssize_t i)

@@ -29,3 +29,11 @@ dev = [
 [tool.cibuildwheel]
 # don't build PyPy wheels, install from source instead
 skip = "pp*"
+
+[tool.black]
+include = '\.pyi?$'
+line-length = 120
+target-version = ['py39']
+
+[tool.isort]
+profile = "black"

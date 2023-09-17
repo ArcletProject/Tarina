@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Awaitable, Callable, Coroutine, Any
-from typing_extensions import TypeGuard
 import inspect
 from functools import lru_cache
+from typing import Any, Awaitable, Callable, Coroutine
+
+from typing_extensions import TypeGuard
 
 cache_size = 4096
 

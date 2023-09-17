@@ -11,8 +11,8 @@ if sys.implementation.name != "cpython":
 
 if not NO_EXTENSIONS:  # pragma: no branch
     try:
-        from ._lru_c import LRU  # type: ignore[misc]
-    except ImportError:  # pragma: no cover
-        from ._lru_py import LRU  # type: ignore[misc]
+        from ._lru_c import LRU as LRU  # type: ignore[misc]
+    except Exception:  # pragma: no cover
+        from ._lru_py import LRU as LRU  # type: ignore[misc]
 else:
-    from ._lru_py import LRU # type: ignore[misc]
+    from ._lru_py import LRU as LRU  # type: ignore[misc]

@@ -11,8 +11,11 @@ if sys.implementation.name != "cpython":
 
 if not NO_EXTENSIONS:  # pragma: no branch
     try:
-        from ._string_c import split, split_once  # type: ignore[misc]
+        from ._string_c import split as split  # type: ignore[misc]
+        from ._string_c import split_once as split_once  # type: ignore[misc]
     except ImportError:  # pragma: no cover
-        from ._string_py import split, split_once  # type: ignore[misc]
+        from ._string_py import split as split  # type: ignore[misc]
+        from ._string_py import split_once as split_once  # type: ignore[misc]
 else:
-    from ._string_py import split, split_once  # type: ignore[misc]
+    from ._string_py import split as split  # type: ignore[misc]
+    from ._string_py import split_once as split_once  # type: ignore[misc]

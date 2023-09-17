@@ -87,3 +87,19 @@ def test_lang():
     lang.select("test")
     assert lang.require("lang", "name_error") == "test"
     assert lang.require("lang", "scope_error") == "'{target}' 不是合法的语种"
+
+
+def test_init_spec():
+    from tarina import init_spec
+    from dataclasses import dataclass
+
+    @dataclass
+    class User:
+        name: str
+        age: int
+
+    @init_spec(User)
+    def add_user(user: User):
+        return user
+
+    assert add_user("test", age=1) == User("test", 1)
