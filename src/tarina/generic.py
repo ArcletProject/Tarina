@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import sys
 import types
 from typing import TYPE_CHECKING, Any, List, Literal, TypeVar, Union
@@ -33,23 +32,31 @@ def generic_isinstance(obj: Any, par: type | Any | tuple[type, ...]) -> bool:
     """
     if par is Any:
         return True
-    with contextlib.suppress(TypeError):
-        if isinstance(par, AnnotatedType):
-            return generic_isinstance(obj, get_args(par)[0])
+    _origin = get_origin(par)
+    try:
         if isinstance(par, type):
             return isinstance(obj, par)
-        if get_origin(par) is Literal:
+
+        if par.__class__ is AnnotatedType:
+            return generic_isinstance(obj, get_args(par)[0])
+        if _origin is Literal:
             return obj in get_args(par)
-        if get_origin(par) in Unions:  # pragma: no cover
-            return any(generic_isinstance(obj, p) for p in get_args(par))
+        if _origin in Unions:  # pragma: no cover
+            for p in get_args(par):
+                if generic_isinstance(obj, p):
+                    return True
+        if par.__class__ is tuple:
+            for p in par:
+                if generic_isinstance(obj, p):
+                    return True
         if isinstance(par, TypeVar):  # pragma: no cover
             if par.__constraints__:
                 return any(generic_isinstance(obj, p) for p in par.__constraints__)
             return generic_isinstance(obj, par.__bound__) if par.__bound__ else True
-        if isinstance(par, tuple):
-            return any(generic_isinstance(obj, p) for p in par)
-        if isinstance(obj, get_origin(par)):  # type: ignore
+        if isinstance(obj, _origin):  # type: ignore
             return True
+    except TypeError:
+        return False
     return False
 
 
@@ -63,20 +70,27 @@ def generic_issubclass(cls: type, par: Union[type, Any, tuple[type, ...]]) -> bo
     """
     if par is Any:
         return True
-    with contextlib.suppress(TypeError):
-        if isinstance(par, AnnotatedType):
-            return generic_issubclass(cls, get_args(par)[0])
+    _origin = get_origin(par)
+    try:
         if isinstance(par, type):
             return issubclass(cls, par)
-        if get_origin(par) in Unions:
-            return any(generic_issubclass(cls, p) for p in get_args(par))
+        if isinstance(par, AnnotatedType):
+            return generic_issubclass(cls, get_args(par)[0])
+        if _origin in Unions:
+            for p in get_args(par):
+                if generic_issubclass(cls, p):
+                    return True
+        if par.__class__ is tuple:
+            for p in par:
+                if generic_issubclass(cls, p):
+                    return True
         if isinstance(par, TypeVar):
             if par.__constraints__:
                 return any(generic_issubclass(cls, p) for p in par.__constraints__)
             if par.__bound__:
                 return generic_issubclass(cls, par.__bound__)
-        if isinstance(par, tuple):
-            return any(generic_issubclass(cls, p) for p in par)
-        if issubclass(cls, get_origin(par)):  # type: ignore
+        if issubclass(cls, _origin):  # type: ignore
             return True
+    except TypeError:
+        return False
     return False
