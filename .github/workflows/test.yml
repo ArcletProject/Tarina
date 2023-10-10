@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         py_ver: ['3.8', '3.9', '3.10', '3.11']
-    runs-on:  windows-latest
+    runs-on:  ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: ${{matrix.py_ver}}
           architecture: 'x64'
-      - name: Ensure PDM & twine
+      - name: Ensure PDM
         run: |
           python3 -m pip install pdm
       - name: Install Package
@@ -26,7 +26,7 @@ jobs:
           pdm sync -G:all --no-self
       - name: Install self
         run: |
-          set TARINA_NO_EXTENSIONS=1 && pdm install
+          export TARINA_NO_EXTENSIONS=1 && pdm install
       - name: Test & Report
         run: |
           pdm run test
