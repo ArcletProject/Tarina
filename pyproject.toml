@@ -23,7 +23,7 @@ build-backend = "setuptools.build_meta"
 dev = [
     "pytest~=7.2.0",
     "coverage~=7.0.1",
-    "cython>=0.29.34",
+    "cython>=3.0.0",
 ]
 
 [tool.cibuildwheel]
@@ -37,3 +37,6 @@ target-version = ['py39']
 
 [tool.isort]
 profile = "black"
+
+[tool.pdm.scripts]
+test = "pytest -v -W ignore"

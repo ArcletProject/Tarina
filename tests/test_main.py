@@ -63,6 +63,11 @@ def test_split():
     assert split("", (' ',)) == []
     assert split("  ", (' ',)) == []
 
+    try:
+        split("rrr \"bbb", (' ',))
+    except SyntaxError as e:
+        assert str(e) == "Unterminated string: 'rrr \"bbb'"
+
 
 def test_lang():
     """测试 i18n """

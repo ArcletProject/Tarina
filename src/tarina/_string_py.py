@@ -40,6 +40,8 @@ def split_once(text: str, separates: tuple[str, ...], crlf: bool = True):
         else:
             out_text += char
             escape = False
+    if quotation:
+        raise SyntaxError(f"Unterminated string: {text!r}")
     return out_text, text[index:]
 
 
@@ -75,4 +77,6 @@ def split(text: str, separates: tuple[str, ...], crlf: bool = True):
         else:
             result += char
             escape = False
+    if quotation:
+        raise SyntaxError(f"Unterminated string: {text!r}")
     return result.split('\0') if result else []

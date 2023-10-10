@@ -57,6 +57,8 @@ def split(str text, tuple separates, char crlf=True):
         else:
             PyList_Append(result, ch)
             escape = 0
+    if quotation != 0:
+        raise SyntaxError(f"Unterminated string: {text!r}")
     if PyUnicode_GET_LENGTH(result) == 0:
         return []
     return PyUnicode_Split(PyUnicode_Join('', result), '\1', -1)
@@ -97,4 +99,6 @@ def split_once(str text, tuple separates, char crlf=True):
         else:
             PyList_Append(out_text, ch)
             escape = 0
+    if quotation != 0:
+        raise SyntaxError(f"Unterminated string: {text!r}")
     return PyUnicode_Join('', out_text), text[index:]
