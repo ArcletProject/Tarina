@@ -13,9 +13,7 @@ else:
     GenericAlias: type = type(List[int])
 
 AnnotatedType: type = type(Annotated[int, lambda x: x > 0])
-Unions = (
-    (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
-)
+Unions = (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
 
 
 def get_origin(obj: Any) -> Any:

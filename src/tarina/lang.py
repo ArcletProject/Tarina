@@ -32,9 +32,7 @@ def _get_win_locale_from_registry() -> str | None:
     import winreg  # noqa
 
     with contextlib.suppress(Exception):
-        with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER, r"Control Panel\International"
-        ) as key:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\International") as key:
             if lcid := winreg.QueryValueEx(key, "Locale")[0]:
                 return locale.windows_locale.get(int(lcid, 16))
 
@@ -63,9 +61,7 @@ def _get_config(root: Path) -> dict[str, Any]:
 
 
 def _get_scopes(root: Path) -> list[str]:
-    return [
-        i.stem for i in root.iterdir() if i.is_file() and not i.name.startswith(".")
-    ]
+    return [i.stem for i in root.iterdir() if i.is_file() and not i.name.startswith(".")]
 
 
 def _get_lang(root: Path, _type: str) -> dict[str, dict[str, str]]:
@@ -130,9 +126,7 @@ class _LangConfig:
 
     def load_data(self, scope: str, data: dict[str, dict[str, str]]):
         if scope in self.__langs:
-            self.__langs[scope] = merge(
-                data, self.__langs[scope], self.__frozen
-            )
+            self.__langs[scope] = merge(data, self.__langs[scope], self.__frozen)
         else:
             self.__scopes.add(scope)
             self.__langs[scope] = data
@@ -141,17 +135,9 @@ class _LangConfig:
             t = parts[0]
             n = parts[1] if len(parts) > 1 else None
             if t not in self.__langs[scope]:
-                raise KeyError(
-                    self.require("lang", "miss_require_type", scope).format(
-                        scope=scope, target=t
-                    )
-                )
+                raise KeyError(self.require("lang", "miss_require_type", scope).format(scope=scope, target=t))
             if n and n not in self.__langs[scope][t]:
-                raise KeyError(
-                    self.require("lang", "miss_require_name", scope).format(
-                        scope=scope, type=t, target=n
-                    )
-                )
+                raise KeyError(self.require("lang", "miss_require_name", scope).format(scope=scope, type=t, target=n))
 
     def load_file(self, filepath: Path):
         return self.load_data(filepath.stem, _get_lang(filepath.parent, filepath.stem))
@@ -172,9 +158,7 @@ class _LangConfig:
     def require(self, _type: str, _name: str, scope: str | None = None) -> str:
         scope = scope or self.__scope
         if scope not in self.__langs:
-            raise ValueError(
-                self.__langs[self.__scope]["lang"]["scope_error"].format(target=scope)
-            )
+            raise ValueError(self.__langs[self.__scope]["lang"]["scope_error"].format(target=scope))
         if _type in self.__langs[scope]:
             _types = self.__langs[scope][_type]
         elif _type in self.__langs[self.__scope]:
@@ -182,11 +166,7 @@ class _LangConfig:
         elif _type in self.__langs[(default := _get_config(root_dir)["default"])]:
             _types = self.__langs[default][_type]
         else:
-            raise ValueError(
-                self.__langs[scope]["lang"]["type_error"].format(
-                    target=_type, scope=scope
-                )
-            )
+            raise ValueError(self.__langs[scope]["lang"]["type_error"].format(target=_type, scope=scope))
         if _name in _types:
             return _types[_name]
         elif _name in self.__langs[self.__scope][_type]:
@@ -194,24 +174,14 @@ class _LangConfig:
         elif _name in self.__langs[(default := _get_config(root_dir)["default"])][_type]:
             return self.__langs[default][_type][_name]
         else:
-            raise ValueError(
-                self.__langs[scope]["lang"]["name_error"].format(
-                    target=_name, scope=scope, type=_type
-                )
-            )
+            raise ValueError(self.__langs[scope]["lang"]["name_error"].format(target=_name, scope=scope, type=_type))
 
     def set(self, _type: str, _name: str, content: str, scope: str | None = None):
         scope = scope or self.__scope
         if scope not in self.__langs:
-            raise ValueError(
-                self.__langs[self.__scope]["lang"]["scope_error"].format(target=scope)
-            )
+            raise ValueError(self.__langs[self.__scope]["lang"]["scope_error"].format(target=scope))
         if _type in self.__frozen:
-            raise ValueError(
-                self.__langs[scope]["lang"]["type_error"].format(
-                    target=_type, scope=scope
-                )
-            )
+            raise ValueError(self.__langs[scope]["lang"]["type_error"].format(target=_type, scope=scope))
         self.__langs[scope].setdefault(_type, {})[_name] = content
 
     def __repr__(self):

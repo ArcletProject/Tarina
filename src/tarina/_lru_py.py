@@ -11,9 +11,7 @@ _T = TypeVar("_T")
 class LRU(Generic[_KT, _VT]):
     __slots__ = ("__max", "__cache", "__size", "__callback")
 
-    def __init__(
-        self, size: int, callback: Callable[[_KT, _VT], Any] | None = None
-    ) -> None:
+    def __init__(self, size: int, callback: Callable[[_KT, _VT], Any] | None = None) -> None:
         if size < 1:
             raise ValueError("Size should be a positive number")
         self.__max = size
@@ -25,12 +23,10 @@ class LRU(Generic[_KT, _VT]):
         self.__cache.clear()
 
     @overload
-    def get(self, key: _KT) -> _VT | None:
-        ...
+    def get(self, key: _KT) -> _VT | None: ...
 
     @overload
-    def get(self, key: _KT, instead: _VT | _T) -> _VT | _T:
-        ...
+    def get(self, key: _KT, instead: _VT | _T) -> _VT | _T: ...
 
     def get(self, key: _KT, instead: _VT | _T | None = None):
         if key in self.__cache:
@@ -60,12 +56,10 @@ class LRU(Generic[_KT, _VT]):
         return self.items()[-1] if self.__cache else None
 
     @overload
-    def pop(self, key: _KT) -> _VT | None:
-        ...
+    def pop(self, key: _KT) -> _VT | None: ...
 
     @overload
-    def pop(self, key: _KT, default: _VT | _T) -> _VT | _T:
-        ...
+    def pop(self, key: _KT, default: _VT | _T) -> _VT | _T: ...
 
     def pop(self, key: _KT, default: _VT | _T | None = None):
         return self.__cache.pop(key, default)
@@ -74,12 +68,10 @@ class LRU(Generic[_KT, _VT]):
         return self.__cache.popitem(last=least_recent)
 
     @overload
-    def setdefault(self: LRU[_KT, _T | None], key: _KT) -> _T | None:
-        ...
+    def setdefault(self: LRU[_KT, _T | None], key: _KT) -> _T | None: ...
 
     @overload
-    def setdefault(self, key: _KT, default: _VT) -> _VT:
-        ...
+    def setdefault(self, key: _KT, default: _VT) -> _VT: ...
 
     def setdefault(self, key: _KT, default: _VT | None = None):
         if key in self.__cache:
@@ -100,12 +92,10 @@ class LRU(Generic[_KT, _VT]):
                     self.__callback(k, v)
 
     @overload
-    def update(self, __m: Iterable[tuple[_KT, _VT]], **kwargs: _VT) -> None:
-        ...
+    def update(self, __m: Iterable[tuple[_KT, _VT]], **kwargs: _VT) -> None: ...
 
     @overload
-    def update(self, **kwargs: _VT) -> None:
-        ...
+    def update(self, **kwargs: _VT) -> None: ...
 
     def update(self, *args, **kwargs):
         self.__cache.update(*args, **kwargs)

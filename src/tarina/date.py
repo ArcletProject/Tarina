@@ -28,9 +28,7 @@ TIME_REGEXP = re.compile(
 
 
 class DateParser:
-    timezone_offset = (
-        datetime.now(timezone.utc).astimezone().utcoffset().total_seconds() / 60
-    )
+    timezone_offset = datetime.now(timezone.utc).astimezone().utcoffset().total_seconds() / 60
 
     @classmethod
     def set_timezone_offset(cls, offset: float):

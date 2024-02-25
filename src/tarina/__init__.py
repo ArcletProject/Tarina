@@ -16,3 +16,4 @@ from .tools import gen_subclass as gen_subclass
 from .tools import group_dict as group_dict
 from .tools import init_spec as init_spec
 from .tools import run_always_await as run_always_await
+from .tools import safe_eval as safe_eval

@@ -1,6 +1,7 @@
-from setuptools import setup, Extension
 import os
 import sys
+
+from setuptools import Extension, setup
 
 NO_EXTENSIONS = bool(os.environ.get("TARINA_NO_EXTENSIONS"))  # type: bool
 

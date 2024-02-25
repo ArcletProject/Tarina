@@ -57,8 +57,7 @@ except ImportError:
             _locals = obj_locals
 
         return {
-            key: eval(value, _globals, _locals)  # type: ignore
-            if isinstance(value, str) else value
+            key: eval(value, _globals, _locals) if isinstance(value, str) else value  # type: ignore
             for key, value in ann.items()
         }
 
@@ -70,12 +69,10 @@ def signatures(callable_target: Callable) -> list[tuple[str, Any, Any]]:
         (
             param.name,
             (
-                callable_annotation.get(param.name)
-                if isinstance(param.annotation, str)
-                else param.annotation
-            )
-            if param.annotation is not inspect.Signature.empty
-            else None,
+                (callable_annotation.get(param.name) if isinstance(param.annotation, str) else param.annotation)
+                if param.annotation is not inspect.Signature.empty
+                else None
+            ),
             param.default,
         )
         for param in get_signature(callable_target)

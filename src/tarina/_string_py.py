@@ -79,4 +79,4 @@ def split(text: str, separates: tuple[str, ...], crlf: bool = True):
             escape = False
     if quotation:
         raise SyntaxError(f"Unterminated string: {text!r}")
-    return result.split('\0') if result else []
+    return result.split("\0") if result else []

@@ -1,6 +1,6 @@
 [project]
 name = "tarina"
-version = "0.4.2"
+version = "0.4.3"
 description = "A collection of common utils for Arclet"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
@@ -24,6 +24,8 @@ dev = [
     "pytest~=7.2.0",
     "coverage~=7.0.1",
     "cython>=3.0.0",
+    "black>=24.2.0",
+    "isort>=5.13.2",
 ]
 
 [tool.cibuildwheel]

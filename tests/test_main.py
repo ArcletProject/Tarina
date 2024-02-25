@@ -1,6 +1,8 @@
 def test_generic_isinstance():
-    from typing import Union, List, TypeVar, Any, Literal, Dict
+    from typing import Any, Dict, List, Literal, TypeVar, Union
+
     from typing_extensions import Annotated
+
     from tarina import generic_isinstance
 
     S = TypeVar("S", bound=str)
@@ -12,7 +14,7 @@ def test_generic_isinstance():
     assert generic_isinstance(1, Annotated[int, lambda x: x > 0])
     assert generic_isinstance("a", S)
     assert generic_isinstance(1, (int, str))
-    assert generic_isinstance('a', (int, str))
+    assert generic_isinstance("a", (int, str))
     assert not generic_isinstance(bool, (str, list))
     assert not generic_isinstance({123}, Dict[str, str])
 
@@ -20,6 +22,7 @@ def test_generic_isinstance():
 def test_lru():
     """测试 LRU缓存"""
     from tarina import LRU
+
     cache: LRU[str, str] = LRU(3)
     cache["a"] = "a"
     cache["b"] = "b"
@@ -35,19 +38,20 @@ def test_lru():
 def test_split_once():
     """测试单次分割函数, 能以引号扩起空格, 并允许保留引号"""
     from tarina import split_once
-    assert split_once("arclet-alconna", (' ',)) == ('arclet-alconna', '')
-    text1 = "rrr b bbbb"
-    text2 = "\'rrr b\' bbbb"
-    text3 = "\\\'rrr b\\\' bbbb"
-    text4 = "\\\'rrr \\b\\\' bbbb"
-    assert split_once(text1, (' ',)) == ('rrr', 'b bbbb')
-    assert split_once(text2, (' ',)) == ("rrr b", 'bbbb')
-    assert split_once(text3, (' ',)) == ("'rrr b'", 'bbbb')
-    assert split_once(text4, (' ',)) == ("'rrr \\b'", 'bbbb')  # 不消除其他转义字符斜杠
 
-    assert split_once("'rrr b\" b' bbbb", (' ',)) == ("rrr b\" b", 'bbbb')
-    assert split_once("rrr  bbbb", (' ',)) == ("rrr", 'bbbb')
-    assert split_once("rrr 'bbb'", (' ',)) == ("rrr", "'bbb'")
+    assert split_once("arclet-alconna", (" ",)) == ("arclet-alconna", "")
+    text1 = "rrr b bbbb"
+    text2 = "'rrr b' bbbb"
+    text3 = "\\'rrr b\\' bbbb"
+    text4 = "\\'rrr \\b\\' bbbb"
+    assert split_once(text1, (" ",)) == ("rrr", "b bbbb")
+    assert split_once(text2, (" ",)) == ("rrr b", "bbbb")
+    assert split_once(text3, (" ",)) == ("'rrr b'", "bbbb")
+    assert split_once(text4, (" ",)) == ("'rrr \\b'", "bbbb")  # 不消除其他转义字符斜杠
+
+    assert split_once("'rrr b\" b' bbbb", (" ",)) == ('rrr b" b', "bbbb")
+    assert split_once("rrr  bbbb", (" ",)) == ("rrr", "bbbb")
+    assert split_once("rrr 'bbb'", (" ",)) == ("rrr", "'bbb'")
 
 
 def test_split():
@@ -55,22 +59,22 @@ def test_split():
     from tarina import split
 
     text1 = "rrr b bbbb"
-    text2 = "\'rrr b\' bbbb"
-    text3 = "\\\'rrr b\\\' bbbb"
-    assert split(text1, (' ',)) == ["rrr", "b", "bbbb"]
-    assert split(text2, (' ',)) == ["rrr b", "bbbb"]
-    assert split(text3, (' ',)) == ["'rrr b'", "bbbb"]
-    assert split("", (' ',)) == []
-    assert split("  ", (' ',)) == []
+    text2 = "'rrr b' bbbb"
+    text3 = "\\'rrr b\\' bbbb"
+    assert split(text1, (" ",)) == ["rrr", "b", "bbbb"]
+    assert split(text2, (" ",)) == ["rrr b", "bbbb"]
+    assert split(text3, (" ",)) == ["'rrr b'", "bbbb"]
+    assert split("", (" ",)) == []
+    assert split("  ", (" ",)) == []
 
     try:
-        split("rrr \"bbb", (' ',))
+        split('rrr "bbb', (" ",))
     except SyntaxError as e:
         assert str(e) == "Unterminated string: 'rrr \"bbb'"
 
 
 def test_lang():
-    """测试 i18n """
+    """测试 i18n"""
     from tarina import lang
 
     assert lang.scopes == {"zh-CN", "en-US"}
@@ -87,7 +91,7 @@ def test_lang():
     try:
         lang.load_data("test", {})
     except KeyError as e:
-        assert str(e) == '"lang file \'test\' missed require type \'lang\'"'
+        assert str(e) == "\"lang file 'test' missed require type 'lang'\""
     lang.load_data("test", {"lang": {"name_error": "test"}})
     lang.select("test")
     assert lang.require("lang", "name_error") == "test"
@@ -95,8 +99,9 @@ def test_lang():
 
 
 def test_init_spec():
-    from tarina import init_spec
     from dataclasses import dataclass
+
+    from tarina import init_spec
 
     @dataclass
     class User:
@@ -111,8 +116,23 @@ def test_init_spec():
 
 
 def test_date_parser():
-    from tarina import DateParser
     from datetime import datetime
+
+    from tarina import DateParser
 
     assert DateParser.parse("2021-01-01") == datetime(2021, 1, 1)
     assert DateParser.parse("2021-01-01 12:34:56") == datetime(2021, 1, 1, 12, 34, 56)
+
+
+def test_safe_eval():
+    from tarina import safe_eval
+
+    ctx = {"a": {"b": ["c"]}}
+
+    assert safe_eval("a['b'][0]", ctx) == "c"
+
+    class A:
+        class B:
+            c = 123
+
+    assert safe_eval("A.B.c", {"A": A}) == 123

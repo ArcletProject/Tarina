@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import re
 from typing import (
     TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
+    Dict,
     Generator,
     Iterable,
     Literal,
@@ -12,7 +14,7 @@ from typing import (
     overload,
 )
 
-from typing_extensions import ParamSpec, Concatenate
+from typing_extensions import Concatenate, ParamSpec
 
 from .guard import is_async
 
@@ -27,9 +29,7 @@ def group_dict(iterable: Iterable, key_callable: Callable[[Any], Any]):
     return temp
 
 
-async def run_always_await(
-    target: Callable[..., Any] | Callable[..., Awaitable[Any]], *args, **kwargs
-) -> Any:
+async def run_always_await(target: Callable[..., Any] | Callable[..., Awaitable[Any]], *args, **kwargs) -> Any:
     obj = target(*args, **kwargs)
     if is_async(target) or is_async(obj):
         obj = await obj
@@ -55,15 +55,13 @@ P = ParamSpec("P")
 
 
 @overload
-def init_spec(fn: Callable[P, T]) -> Callable[[Callable[[T], R]], Callable[P, R]]:
-    ...
+def init_spec(fn: Callable[P, T]) -> Callable[[Callable[[T], R]], Callable[P, R]]: ...
 
 
 @overload
 def init_spec(
     fn: Callable[P, T], is_method: Literal[True]
-) -> Callable[[Callable[[Any, T], R]], Callable[Concatenate[Any, P], R]]:
-    ...
+) -> Callable[[Callable[[Any, T], R]], Callable[Concatenate[Any, P], R]]: ...
 
 
 def init_spec(  # type: ignore
@@ -78,3 +76,42 @@ def init_spec(  # type: ignore
         return inner
 
     return wrapper
+
+
+def safe_eval(route: str, _locals: Dict[str, Any]):
+    parts = re.split(r"\.|(\[.+?\])|(\(.*?\))", route)
+    if (key := parts[0]) not in _locals:
+        raise NameError(key)
+    res = _locals[key]
+    for part in parts[1:]:
+        if not part:
+            continue
+        if part.startswith("_"):
+            raise ValueError(route)
+        if part.startswith("[") and part.endswith("]"):
+            item = part[1:-1]
+            if item[0] in ("'", '"') and item[-1] in ("'", '"'):
+                res = res[item[1:-1]]
+            elif ":" in item:
+                res = res[slice(*(int(x) if x else None for x in item.split(":")))]
+            else:
+                res = res[int(item)]
+        elif part.startswith("(") and part.endswith(")"):
+            item = part[1:-1]
+            if not item:
+                res = res()
+            else:
+                _parts = item.split(",")
+                _args = []
+                _kwargs = {}
+                for _part in _parts:
+                    _part = _part.strip()
+                    if re.match(".+=.+", _part):
+                        k, v = _part.split("=")
+                        _kwargs[k] = v
+                    else:
+                        _args.append(_part)
+                res = res(*_args, **_kwargs)
+        else:
+            res = getattr(res, part)
+    return res
