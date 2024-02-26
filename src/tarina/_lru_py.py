@@ -76,7 +76,7 @@ class LRU(Generic[_KT, _VT]):
     def setdefault(self, key: _KT, default: _VT | None = None):
         if key in self.__cache:
             return self.__cache[key]
-        self.__setitem__(key, default)
+        self.__setitem__(key, default)  # type: ignore
         return default
 
     def set_callback(self, callback: Callable[[_KT, _VT], Any]) -> None:

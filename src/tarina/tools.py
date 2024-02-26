@@ -95,7 +95,10 @@ def safe_eval(route: str, _locals: Dict[str, Any]):
             elif ":" in item:
                 res = res[slice(*(int(x) if x else None for x in item.split(":")))]
             else:
-                res = res[int(item)]
+                try:
+                    res = res[int(item)]
+                except ValueError:
+                    res = res[item]
         elif part.startswith("(") and part.endswith(")"):
             item = part[1:-1]
             if not item:
@@ -108,8 +111,12 @@ def safe_eval(route: str, _locals: Dict[str, Any]):
                     _part = _part.strip()
                     if re.match(".+=.+", _part):
                         k, v = _part.split("=")
+                        if v[0] in ("'", '"') and v[-1] in ("'", '"'):
+                            v = v[1:-1]
                         _kwargs[k] = v
                     else:
+                        if _part[0] in ("'", '"') and _part[-1] in ("'", '"'):
+                            _part = _part[1:-1]
                         _args.append(_part)
                 res = res(*_args, **_kwargs)
         else:

@@ -15,7 +15,7 @@ class ContextModel(Generic[T]):
         self.current_ctx = ContextVar(name)
 
     def get(self, default: T | D | None = None) -> T | D:
-        return self.current_ctx.get(default)
+        return self.current_ctx.get(default)  # type: ignore
 
     def set(self, value: T):
         return self.current_ctx.set(value)

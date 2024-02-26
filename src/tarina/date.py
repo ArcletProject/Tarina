@@ -46,7 +46,7 @@ class DateParser:
             date = datetime.fromtimestamp(date)
         if offset is None:
             offset = cls.timezone_offset
-        return int((date.timestamp() / MINUTE - offset) / 1440)
+        return int((date.timestamp() / MINUTE - offset) / 1440)  # type: ignore
 
     @classmethod
     def from_date_number(cls, value: float, offset: Union[float, None] = None):

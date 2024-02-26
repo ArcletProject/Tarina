@@ -6,18 +6,18 @@ import locale
 import os
 import sys
 from pathlib import Path
-from typing import Any, Final, TypedDict, final
+from typing import Final, TypedDict, cast, final
 
-from typing_extensions import NotRequired, Self
+from typing_extensions import Self
 
 root_dir: Final[Path] = Path(__file__).parent / "i18n"
 WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name == "nt")
 
 
 class _LangDict(TypedDict):
-    default: NotRequired[str]
-    frozen: NotRequired[list[str]]
-    require: NotRequired[list[str]]
+    default: str
+    frozen: list[str]
+    require: list[str]
 
 
 def _get_win_locale_with_ctypes() -> str | None:
@@ -53,11 +53,11 @@ def get_locale() -> str | None:
     return locale.getlocale(locale.LC_MESSAGES)[0]
 
 
-def _get_config(root: Path) -> dict[str, Any]:
+def _get_config(root: Path) -> _LangDict:
     if not (root / ".config.json").exists():
-        return {}
+        raise FileNotFoundError(f"Config file not found in {root}")
     with (root / ".config.json").open("r", encoding="utf-8") as f:
-        return json.load(f)
+        return cast(_LangDict, json.load(f))
 
 
 def _get_scopes(root: Path) -> list[str]:
