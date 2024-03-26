@@ -26,6 +26,7 @@ dev = [
     "cython>=3.0.0",
     "black>=24.2.0",
     "isort>=5.13.2",
+    "fix-future-annotations>=0.5.0",
 ]
 
 [tool.cibuildwheel]

@@ -32,7 +32,7 @@ def group_dict(iterable: Iterable, key_callable: Callable[[Any], Any]):
 async def run_always_await(target: Callable[..., Any] | Callable[..., Awaitable[Any]], *args, **kwargs) -> Any:
     obj = target(*args, **kwargs)
     if is_async(target) or is_async(obj):
-        obj = await obj
+        obj = await obj  # type: ignore
     return obj
 
 
