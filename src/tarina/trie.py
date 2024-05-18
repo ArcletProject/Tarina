@@ -94,7 +94,7 @@ class _NoChildren(Children[_VT]):
     def pick(self) -> tuple[str, _Node[_VT]]:
         raise NotImplementedError()
 
-    def get(self, _step: str):
+    def get(self, step: str):
         return None
 
     def add(self, parent: _Node[_VT], step: str):
@@ -110,7 +110,7 @@ class _NoChildren(Children[_VT]):
     def delete(self, parent: _Node[_VT], step: str) -> None:
         return
 
-    def copy(self, _make_copy, _queue):
+    def copy(self, make_copy, queue):
         return self
 
     def __deepcopy__(self, memo):
@@ -144,7 +144,7 @@ class _OneChild(Children[_VT]):
     sorted_items = items
 
     def pick(self):
-        return (self.step, self.node)
+        return self.step, self.node
 
     def get(self, step):
         return self.node if step == self.step else None
@@ -159,7 +159,7 @@ class _OneChild(Children[_VT]):
 
     def merge(self, other, queue):
         """Moves children from other into this object."""
-        if type(other) == _OneChild and other.step == self.step:
+        if isinstance(other, _OneChild) and other.step == self.step:
             queue.append((self.node, other.node))
             return self
         else:
@@ -202,11 +202,11 @@ class _Children(Children[_VT]):
     def get(self, step: str) -> _Node[_VT] | None:
         return self.data.get(step)
 
-    def add(self, _parent: _Node[_VT], step: str):
+    def add(self, parent: _Node[_VT], step: str):
         self.data[step] = node = _Node()
         return node
 
-    def require(self, _parent: _Node[_VT], step: str):
+    def require(self, parent: _Node[_VT], step: str):
         return self.data.setdefault(step, _Node())
 
     def merge(self, other, queue):
@@ -225,7 +225,8 @@ class _Children(Children[_VT]):
     def copy(self, make_copy, queue):
         cpy = _Children()
         cpy.data.update((make_copy(step), node.shallow_copy(make_copy)) for step, node in self.items())
-        queue.append(tuple(cpy.data.values()))
+        nodes = list(cpy.data.values())
+        queue.append(tuple(nodes))
         return cpy
 
 
@@ -1934,3 +1935,10 @@ if __name__ == "__main__":
     c = trie["ba":]
 
     print(a, b, list(c))
+
+    trie1 = StringTrie[str](separator=".")
+    trie1["foo.bar"] = "FooBar"
+    trie1["foo.baz"] = "FooBaz"
+    trie1["foo.abc.def"] = "FooAbcDef"
+
+    print(trie1.has_subtrie("foo"))

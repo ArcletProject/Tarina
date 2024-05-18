@@ -10,7 +10,7 @@ from typing import Final, TypedDict, cast, final
 
 from typing_extensions import Self
 
-root_dir: Final[Path] = Path(__file__).parent / "i18n"
+root_dir: Final[Path] = Path(__file__).parent.parent / "i18n"
 WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name == "nt")
 
 
@@ -50,7 +50,7 @@ def get_locale() -> str | None:
     if WINDOWS:
         return _get_win_locale()
 
-    return locale.getlocale(locale.LC_MESSAGES)[0]
+    return locale.getlocale(locale.LC_MESSAGES)[0]  # type: ignore
 
 
 def _get_config(root: Path) -> _LangDict:
