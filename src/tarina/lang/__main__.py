@@ -186,7 +186,7 @@ def delete(args):
 
 
 def main():
-    parser = ArgumentParser(description="tarina.lang CLI tool")
+    parser = ArgumentParser(description="tarina-lang CLI tool")
 
     subparsers = parser.add_subparsers(dest="command")
 
