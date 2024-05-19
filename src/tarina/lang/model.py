@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from tarina.lang import lang
 from tarina.lang.schema import _TemplateDict, get_template
+from tarina.tools import pascal_case
 import keyword
 
 
@@ -27,15 +28,15 @@ MODEL_TEMPLATE = """\
 from tarina.lang.model import LangModel, LangItem
 
 
-{scope_classes}
-class Lang(LangModel):
-{scopes}
+{scope_classes}class Lang(LangModel):
+{scopes}\
 """
 
 
 SCOPE_TEMPLATE = """\
 class {scope}:
 {types}
+
 """
 
 TYPE_TEMPLATE = """\
@@ -55,7 +56,7 @@ def generate_model(root: Path):
         scope = re.sub(r"[\W\s]+", "_", s["scope"])
         if scope in keyword.kwlist:
             scope += "_"
-        scope_class = scope.capitalize()
+        scope_class = pascal_case(scope)
         if scope_class == "Lang":
             scope_class += "_"
         types_str = ""
@@ -63,7 +64,7 @@ def generate_model(root: Path):
             name = re.sub(r"[\W\s]+", "_", t)
             if name in keyword.kwlist:
                 name += "_"
-            types_str += TYPE_TEMPLATE.format(name=t, scope=s["scope"], type=t)
+            types_str += TYPE_TEMPLATE.format(name=name, scope=s["scope"], type=t)
         scopes_classes += SCOPE_TEMPLATE.format(scope=scope_class, types=types_str)
         scopes_str += f"    {scope} = {scope_class}\n"
     return MODEL_TEMPLATE.format(scope_classes=scopes_classes, scopes=scopes_str)

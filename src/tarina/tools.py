@@ -122,3 +122,27 @@ def safe_eval(route: str, _locals: Dict[str, Any]):
         else:
             res = getattr(res, part)
     return res
+
+
+def uncapitalize(source: str) -> str:
+    return source[0].lower() + source[1:]
+
+
+def camel_case(source: str) -> str:
+    return re.sub("[_-][a-z]", lambda mat: mat[0][1:].upper(), source)
+
+
+def pascal_case(source: str) -> str:
+    return re.sub("[_-][a-z]", lambda mat: mat[0][1:].upper(), source.capitalize())
+
+
+def param_case(source: str) -> str:
+    return re.sub(
+        ".[A-Z]+", lambda mat: mat[0][0] + "-" + mat[0][1:].lower(), uncapitalize(source).replace("_", "-")
+    )
+
+
+def snake_case(source: str) -> str:
+    return re.sub(
+        ".[A-Z]", lambda mat: mat[0][0] + "_" + mat[0][1:].lower(), uncapitalize(source).replace("-", "_")
+    )
