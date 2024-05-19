@@ -4,11 +4,11 @@
     {
       "scope": "lang",
       "types": [
+        "locale_error",
         "scope_error",
         "type_error",
-        "name_error",
-        "miss_require_type",
-        "miss_require_name"
+        "miss_require_scope",
+        "miss_require_type"
       ]
     }
   ]

@@ -27,10 +27,10 @@ def test_lru():
     cache["a"] = "a"
     cache["b"] = "b"
     cache["c"] = "c"
-    assert cache.peek_first_item()[1] == "c"
+    assert cache.peek_first_item()[1] == "c"  # type: ignore
     _ = cache.get("a", Ellipsis)
     print(f"\n{cache.items()}")
-    assert cache.peek_first_item()[1] == "a"
+    assert cache.peek_first_item()[1] == "a"  # type: ignore
     cache["d"] = "d"
     assert cache.get("b", Ellipsis) == Ellipsis
 
@@ -77,25 +77,25 @@ def test_lang():
     """测试 i18n"""
     from tarina import lang
 
-    assert lang.scopes == {"zh-CN", "en-US"}
+    assert lang.locales == {"zh-CN", "en-US"}
     lang.select("zh-CN")
     assert lang.current == "zh-CN"
-    assert lang.require("lang", "name_error") == "'{target}' 在 '{scope}:{type}' 不是合法的名称"
-    assert lang.require("lang", "name_error", "en-US") == "'{target}' is not a valid name in '{scope}:{type}'"
+    assert lang.require("lang", "type_error") == "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
+    assert lang.require("lang", "type_error", "en-US") == "'{target}' is not a valid type in '{locale}:{scope}'"
     lang.select("en-US")
     assert lang.current == "en-US"
     try:
         lang.select("ru-RU")
     except ValueError as e:
-        assert str(e) == "'ru-RU' is not a valid language scope"
+        assert str(e) == "'ru-RU' is not a valid language locale"
     try:
         lang.load_data("test", {})
     except KeyError as e:
-        assert str(e) == "\"lang file 'test' missed require type 'lang'\""
-    lang.load_data("test", {"lang": {"name_error": "test"}})
+        assert str(e) == "\"lang file 'test' missed require scope 'lang'\""
+    lang.load_data("test", {"lang": {"type_error": "test"}})
     lang.select("test")
-    assert lang.require("lang", "name_error") == "test"
-    assert lang.require("lang", "scope_error") == "'{target}' 不是合法的语种"
+    assert lang.require("lang", "type_error") == "test"
+    assert lang.require("lang", "locale_error") == "'{target}' 不是合法的语种"
 
 
 def test_init_spec():

@@ -20,6 +20,7 @@ def schema_scope(scope: str, types: list[str]):
         "title": scope.capitalize(),
         "description": f"Scope '{scope}' of lang item",
         "type": "object",
+        "additionalProperties": False,
         "properties": {
             i: {
                 "title": i,
@@ -52,7 +53,3 @@ def write_lang_schema(root: Path):
     schema = generate_lang_schema(root)
     with (root / f".lang.schema.json").open("w", encoding="utf-8") as f:
         json.dump(schema, f, ensure_ascii=False, indent=2)
-
-
-if __name__ == "__main__":
-    write_lang_schema(Path(__file__).parent.parent / "i18n")
