@@ -153,7 +153,7 @@ class _LangConfig:
     def load(self, root: Path) -> Self:
         self.load_config(_get_config(root))
         for i in root.iterdir():
-            if not i.is_file() or i.name.startswith("."):
+            if not i.is_file() or i.name.startswith(".") or i.suffix != ".json":
                 continue
             self.load_file(i)
         return self
