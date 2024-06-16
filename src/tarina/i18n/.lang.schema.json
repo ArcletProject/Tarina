@@ -2,8 +2,9 @@
   "title": "Lang Schema",
   "description": "Schema for lang file",
   "type": "object",
-  "minProperties": 2,
-  "maxProperties": 2,
+  "required": [
+    "lang"
+  ],
   "properties": {
     "lang": {
       "title": "Lang",

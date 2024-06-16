@@ -76,12 +76,13 @@ def test_split():
 def test_lang():
     """测试 i18n"""
     from tarina import lang
+    from pathlib import Path
 
     assert lang.locales == {"zh-CN", "en-US"}
     lang.select("zh-CN")
     assert lang.current == "zh-CN"
-    assert lang.require("lang", "type_error") == "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
-    assert lang.require("lang", "type_error", "en-US") == "'{target}' is not a valid type in '{locale}:{scope}'"
+    assert lang.require("lang", "error.type") == "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
+    assert lang.require("lang", "error.type", "en-US") == "'{target}' is not a valid type in '{locale}:{scope}'"
     lang.select("en-US")
     assert lang.current == "en-US"
     try:
@@ -92,10 +93,12 @@ def test_lang():
         lang.load_data("test", {})
     except KeyError as e:
         assert str(e) == "\"lang file 'test' missed require scope 'lang'\""
-    lang.load_data("test", {"lang": {"type_error": "test"}})
+    lang.load_data("test", {"lang": {"error": {"type": "test"}}})
     lang.select("test")
-    assert lang.require("lang", "type_error") == "test"
-    assert lang.require("lang", "locale_error") == "'{target}' 不是合法的语种"
+    assert lang.require("lang", "error.type") == "test"
+    assert lang.require("lang", "error.locale") == "'{target}' 不是合法的语种"
+    lang.load_file(Path(__file__).parent / "en-UK.yml")
+    assert lang.locales == {'zh-CN', 'test', 'en-US', 'en-UK'}
 
 
 def test_init_spec():

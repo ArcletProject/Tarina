@@ -6,7 +6,7 @@ import locale
 import os
 import sys
 from pathlib import Path
-from typing import Final, TypedDict, cast, final
+from typing import Final, TypedDict, Union, cast, final
 
 from typing_extensions import Self
 
@@ -60,18 +60,34 @@ def _get_config(root: Path) -> _LangDict:
         return cast(_LangDict, json.load(f))
 
 
-def _get_scopes(root: Path) -> list[str]:
-    return [i.stem for i in root.iterdir() if i.is_file() and i.suffix == ".json" and not i.name.startswith(".")]
+
+Types = Union[str, dict[str, "Types"]]
+Raw = dict[str, dict[str, Types]]
 
 
-def _get_lang(root: Path, _type: str) -> dict[str, dict[str, str]]:
-    with (root / f"{_type}.json").open("r", encoding="utf-8") as f:
-        data: dict[str, dict[str, str]] = json.load(f)
-    data.pop("$schema", None)
-    return data
+def convert_dictionary(data, prefix: str = ""):
+    result = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            result.update(convert_dictionary(value, f"{prefix}{key}."))
+        else:
+            result[f"{prefix}{key}"] = value
+    return result
 
 
-def merge(source: dict, target: dict, ignore: list[str] | None = None) -> dict:
+def flatten(data: Raw) -> dict[str, dict[str, str]]:
+    result = {}
+    for scope, types in data.items():
+        result[scope] = {}
+        for type, value in types.items():
+            if isinstance(value, dict):
+                result[scope].update(convert_dictionary({type: value}))
+            else:
+                result[scope][type] = value
+    return result
+
+
+def merge(source: dict, target: dict, ignore: list[str] | None = None) -> dict[str, dict[str, str]]:
     ignore = ignore or []
     for key, value in source.items():
         if key in target and key in ignore:
@@ -85,6 +101,34 @@ def merge(source: dict, target: dict, ignore: list[str] | None = None) -> dict:
     return target
 
 
+def _get_lang(file: Path) -> Raw:
+    if not file.exists():
+        raise FileNotFoundError(f"Lang file '{file}' not found")
+    if file.suffix.startswith(".json"):
+        with file.open("r", encoding="utf-8") as f:
+            data: Raw = json.load(f)
+        data.pop("$schema", None)
+        return data
+    try:
+        import yaml
+    except ImportError:
+        raise ImportError("PyYAML is required to load yaml file")
+    with file.open("r", encoding="utf-8") as f:
+        data: Raw = yaml.safe_load(f)
+    data.pop("$schema", None)
+    return data
+
+
+
+def _get_scopes(root: Path) -> dict[str, dict[str, dict[str, str]]]:
+    result = {}
+    for i in root.iterdir():
+        if not i.is_file() or i.name.startswith(".") or i.suffix not in (".json", ".yaml", ".yml"):
+            continue
+        result[i.stem] = flatten(_get_lang(i))
+    return result
+
+
 @final
 class _LangConfig:
     def __init__(self):
@@ -92,13 +136,13 @@ class _LangConfig:
         self.__locale: str = __config["default"]
         self.__frozen: list[str] = __config["frozen"]
         self.__require: list[str] = __config["require"]
-        self.__langs = {t.replace("_", "-"): _get_lang(root_dir, t) for t in _get_scopes(root_dir)}
+        self.__langs: dict[str, dict[str, dict[str, str]]] = _get_scopes(root_dir)
         self.__locales = set(self.__langs.keys())
         self.select_local()
 
     @property
     def locales(self):
-        return self.__locales
+        return set(sorted(self.__locales))
 
     @property
     def current(self):
@@ -115,7 +159,7 @@ class _LangConfig:
     def select(self, locale: str) -> Self:
         locale = locale.replace("_", "-")
         if locale not in self.__langs:
-            raise ValueError(self.require("lang", "locale_error").format(target=locale))
+            raise ValueError(self.require("lang", "error.locale").format(target=locale))
         self.__locale = locale
         return self
 
@@ -126,12 +170,12 @@ class _LangConfig:
         with (_root / ".config.json").open("w+", encoding="utf-8") as f:
             json.dump(config, f, ensure_ascii=False, indent=2)
 
-    def load_data(self, locale: str, data: dict[str, dict[str, str]]):
+    def load_data(self, locale: str, data: Raw):
         if locale in self.__langs:
-            self.__langs[locale] = merge(data, self.__langs[locale], self.__frozen)
+            self.__langs[locale] = merge(flatten(data), self.__langs[locale], self.__frozen)
         else:
             self.__locales.add(locale)
-            self.__langs[locale] = data
+            self.__langs[locale] = flatten(data)
         for key in self.__require:
             parts = key.split(".", 1)
             s = parts[0]
@@ -142,7 +186,7 @@ class _LangConfig:
                 raise KeyError(self.require("lang", "miss_require_type", locale).format(locale=locale, scope=s, target=t))
 
     def load_file(self, filepath: Path):
-        return self.load_data(filepath.stem, _get_lang(filepath.parent, filepath.stem))
+        return self.load_data(filepath.stem, _get_lang(filepath))
 
     def load_config(self, config: _LangDict):
         self.__locale = config.get("default", self.__locale)
@@ -153,7 +197,7 @@ class _LangConfig:
     def load(self, root: Path) -> Self:
         self.load_config(_get_config(root))
         for i in root.iterdir():
-            if not i.is_file() or i.name.startswith(".") or i.suffix != ".json":
+            if not i.is_file() or i.name.startswith(".") or i.suffix not in (".json", ".yaml", ".yml"):
                 continue
             self.load_file(i)
         return self
@@ -161,7 +205,7 @@ class _LangConfig:
     def require(self, scope: str, type: str, locale: str | None = None) -> str:
         locale = locale or self.__locale
         if locale not in self.__langs:
-            raise ValueError(self.__langs[self.__locale]["lang"]["locale_error"].format(target=locale))
+            raise ValueError(self.__langs[self.__locale]["lang"]["error.locale"].format(target=locale))
         if scope in self.__langs[locale]:
             _types = self.__langs[locale][scope]
         elif scope in self.__langs[self.__locale]:
@@ -169,7 +213,7 @@ class _LangConfig:
         elif scope in self.__langs[(default := _get_config(root_dir)["default"])]:
             _types = self.__langs[default][scope]
         else:
-            raise ValueError(self.__langs[locale]["lang"]["scope_error"].format(target=scope, locale=locale))
+            raise ValueError(self.__langs[locale]["lang"]["error.scope"].format(target=scope, locale=locale))
         if type in _types:
             return _types[type]
         elif type in self.__langs[self.__locale][scope]:
@@ -177,14 +221,14 @@ class _LangConfig:
         elif type in self.__langs[(default := _get_config(root_dir)["default"])][scope]:
             return self.__langs[default][scope][type]
         else:
-            raise ValueError(self.__langs[locale]["lang"]["type_error"].format(target=type, locale=locale, scope=scope))
+            raise ValueError(self.__langs[locale]["lang"]["error.type"].format(target=type, locale=locale, scope=scope))
 
     def set(self, scope: str, type: str, content: str, locale: str | None = None):
         locale = locale or self.__locale
         if locale not in self.__langs:
-            raise ValueError(self.__langs[self.__locale]["lang"]["locale_error"].format(target=locale))
+            raise ValueError(self.__langs[self.__locale]["lang"]["error.locale"].format(target=locale))
         if scope in self.__frozen:
-            raise ValueError(self.__langs[locale]["lang"]["scope_error"].format(target=scope, locale=locale))
+            raise ValueError(self.__langs[locale]["lang"]["error.scope"].format(target=scope, locale=locale))
         self.__langs[locale].setdefault(scope, {})[type] = content
 
     def __repr__(self):

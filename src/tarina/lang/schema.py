@@ -49,11 +49,9 @@ def generate_lang_schema(root: Path):
         "title": "Lang Schema",
         "description": f"Schema for lang file",
         "type": "object",
-        "minProperties": 1 + len(scopes),
-        "maxProperties": 1 + len(scopes),
         "properties": {
             s["scope"]: schema_scope(s["scope"], s["types"]) for s in scopes
-        }
+        },
     }
 
 
