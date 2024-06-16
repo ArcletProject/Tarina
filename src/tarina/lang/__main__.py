@@ -89,10 +89,15 @@ TEMPLATE_TEMPLATE = """\
 }
 """
 
-LANG_TEMPLATE = """\
+LANG_TEMPLATE_JSON = """\
 {
   "$schema": ".lang.schema.json"
 }
+"""
+
+LANG_TEMPLATE_YAML = """\
+# $schema: .lang.schema.json
+
 """
 
 def new(*_):
@@ -186,10 +191,16 @@ def model(*_):
 
 def create(args):
     root = Path.cwd()
-    lang_file = root / f"{args.name}.json"
+    if args.yaml:
+        lang_file = root / f"{args.name}.yaml"
 
-    with lang_file.open("w+") as f:
-        f.write(LANG_TEMPLATE)
+        with lang_file.open("w+") as f:
+            f.write(LANG_TEMPLATE_YAML)
+    else:
+      lang_file = root / f"{args.name}.json"
+
+      with lang_file.open("w+") as f:
+          f.write(LANG_TEMPLATE_JSON)
 
     print(f"lang file created: {lang_file}")
 
@@ -229,6 +240,7 @@ def main():
 
     create_parser = subparsers.add_parser("create", help="create a new lang file")
     create_parser.add_argument("name", type=str, help="name of the lang file")
+    create_parser.add_argument("--yaml", action="store_true", help="create a yaml file instead of json")
     create_parser.set_defaults(func=create)
 
     delete_parser = subparsers.add_parser("delete", help="delete a lang file")
