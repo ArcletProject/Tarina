@@ -4,9 +4,14 @@
     {
       "scope": "lang",
       "types": [
-        "locale_error",
-        "scope_error",
-        "type_error",
+        {
+          "subtype": "error",
+          "types": [
+            "locale",
+            "scope",
+            "type"
+          ]
+        },
         "miss_require_scope",
         "miss_require_type"
       ]

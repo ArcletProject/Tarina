@@ -1,11 +1,16 @@
 import json
 from pathlib import Path
-from typing import cast, TypedDict
+from typing import cast, TypedDict, Union
+
+
+class _Subtypes(TypedDict):
+    subtype: str
+    types: list[Union[str, "_Subtypes"]]
 
 
 class _TemplateDict(TypedDict):
     scope: str
-    types: list[str]
+    types: list[Union[str, "_Subtypes"]]
 
 
 def get_template(root: Path):
@@ -15,21 +20,24 @@ def get_template(root: Path):
         return cast(dict, json.load(f))
 
 
-def schema_scope(scope: str, types: list[str]):
-    return {
+def schema_scope(scope: str, types: list[Union[str, "_Subtypes"]]):
+    schema = {
         "title": scope.capitalize(),
         "description": f"Scope '{scope}' of lang item",
         "type": "object",
         "additionalProperties": False,
-        "properties": {
-            i: {
-                "title": i,
-                "description": f"value of lang item type '{i}'",
-                "type": "string"
-            } for i in types
-        },
+        "properties": {}
     }
-
+    for t in types:
+        if isinstance(t, str):
+            schema["properties"][t] = {
+                "title": t,
+                "description": f"value of lang item type '{t}'",
+                "type": "string"
+            }
+        else:
+            schema["properties"][t["subtype"]] = schema_scope(t["subtype"], t["types"])
+    return schema
 
 
 def generate_lang_schema(root: Path):

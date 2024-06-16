@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 from tarina.lang import lang
-from tarina.lang.schema import _TemplateDict, get_template
+from tarina.lang.schema import _Subtypes, _TemplateDict, get_template
 from tarina.tools import pascal_case
 import keyword
 
@@ -59,13 +59,24 @@ def generate_model(root: Path):
         scope_class = pascal_case(scope)
         if scope_class == "Lang":
             scope_class += "_"
-        types_str = ""
-        for t in s["types"]:
-            name = re.sub(r"[\W\s]+", "_", t)
-            if name in keyword.kwlist:
-                name += "_"
-            types_str += TYPE_TEMPLATE.format(name=name, scope=s["scope"], type=t)
-        scopes_classes += SCOPE_TEMPLATE.format(scope=scope_class, types=types_str)
+
+        def visit_types(_scope: str, _types: "list[str | _Subtypes]", prefix: str = ""):
+        
+            types_str = ""
+            for t in _types:
+                if isinstance(t, dict):
+                    subtype = re.sub(r"[\W\s]+", "_", t["subtype"])
+                    if subtype in keyword.kwlist:
+                        subtype += "_"
+                    yield from visit_types(f"{_scope}{pascal_case(subtype)}", t["types"], prefix=f"{prefix}{t['subtype']}.")
+                    types_str += f"    {subtype} = {_scope}{pascal_case(subtype)}\n"
+                else:
+                    name = re.sub(r"[\W\s]+", "_", t)
+                    if name in keyword.kwlist:
+                        name += "_"
+                    types_str += TYPE_TEMPLATE.format(name=name, scope=s["scope"], type=f"{prefix}{t}")
+            yield SCOPE_TEMPLATE.format(scope=_scope, types=types_str)
+        scopes_classes += "\n".join(visit_types(scope_class, s["types"]))
         scopes_str += f"    {scope} = {scope_class}\n"
     return MODEL_TEMPLATE.format(scope_classes=scopes_classes, scopes=scopes_str)
 

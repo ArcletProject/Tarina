@@ -11,20 +11,28 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "locale_error": {
-          "title": "locale_error",
-          "description": "value of lang item type 'locale_error'",
-          "type": "string"
-        },
-        "scope_error": {
-          "title": "scope_error",
-          "description": "value of lang item type 'scope_error'",
-          "type": "string"
-        },
-        "type_error": {
-          "title": "type_error",
-          "description": "value of lang item type 'type_error'",
-          "type": "string"
+        "error": {
+          "title": "Error",
+          "description": "Scope 'error' of lang item",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "locale": {
+              "title": "locale",
+              "description": "value of lang item type 'locale'",
+              "type": "string"
+            },
+            "scope": {
+              "title": "scope",
+              "description": "value of lang item type 'scope'",
+              "type": "string"
+            },
+            "type": {
+              "title": "type",
+              "description": "value of lang item type 'type'",
+              "type": "string"
+            }
+          }
         },
         "miss_require_scope": {
           "title": "miss_require_scope",

@@ -44,16 +44,37 @@ TEMPLATE_SCHEMA = """\
           "scope": {
             "type": "string",
             "description": "Scope name"
-        },
+          },
           "types": {
             "type": "array",
             "description": "All types of lang items",
             "uniqueItems": true,
             "items": {
-              "type": "string",
-              "description": "Value of lang item"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Value of lang item"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "subtype": {
+                      "type": "string",
+                      "description": "Subtype name of lang item"
+                    },
+                    "types": {
+                      "type": "array",
+                      "description": "All subtypes of lang items",
+                      "uniqueItems": true,
+                      "items": {
+                        "$ref": "#/properties/scopes/items/properties/types/items"
+                      }
+                    }
+                  }
+                }
+              ]
             }
-        }
+          }
         }
       }
     }
