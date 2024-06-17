@@ -6,7 +6,7 @@ import locale
 import os
 import sys
 from pathlib import Path
-from typing import Final, TypedDict, Union, cast, final
+from typing import Dict, Final, TypedDict, Union, cast, final
 
 from typing_extensions import Self
 
@@ -61,8 +61,8 @@ def _get_config(root: Path) -> _LangDict:
 
 
 
-Types = Union[str, dict[str, "Types"]]
-Raw = dict[str, dict[str, Types]]
+Types = Union[str, Dict[str, "Types"]]
+Raw = Dict[str, Dict[str, Types]]
 
 
 def convert_dictionary(data, prefix: str = ""):

@@ -42,6 +42,7 @@
 ├──📂 i18n
 │      ├── __init__.py
 │      ├── .config.json
+++     ├── .lang.schema.json
 │      ├── .template.json
 │      ├── .template.schema.json
 ++     ├── en-US.json
