@@ -87,11 +87,8 @@ def flatten(data: Raw) -> dict[str, dict[str, str]]:
     return result
 
 
-def merge(source: dict, target: dict, ignore: list[str] | None = None) -> dict[str, dict[str, str]]:
-    ignore = ignore or []
+def merge(source: dict, target: dict) -> dict:
     for key, value in source.items():
-        if key in target and key in ignore:
-            continue
         if isinstance(value, dict):
             target[key] = merge(value, target.get(key, {}))
         elif isinstance(value, list):
@@ -99,6 +96,22 @@ def merge(source: dict, target: dict, ignore: list[str] | None = None) -> dict[s
         else:
             target[key] = value
     return target
+
+
+def _expand(data: list[str]):
+    result: dict[str, list[str]] = {}
+    for i in data:
+        if "." not in i:
+            i += ".*"
+        parts = i.split(".", 1)
+        s = parts[0]
+        if s not in result:
+            result[s] = []
+            if not parts[1].startswith("*"):
+                result[s].append(parts[1])
+        elif result[s] and not parts[1].startswith("*"):
+            result[s].append(parts[1])
+    return result
 
 
 def _get_lang(file: Path) -> Raw:
@@ -134,8 +147,8 @@ class _LangConfig:
     def __init__(self):
         __config = _get_config(root_dir)
         self.__locale: str = __config["default"]
-        self.__frozen: list[str] = __config["frozen"]
-        self.__require: list[str] = __config["require"]
+        self.__frozen: dict[str, list[str]] = _expand(__config["frozen"])
+        self.__require: dict[str, list[str]] = _expand(__config["require"])
         self.__langs: dict[str, dict[str, dict[str, str]]] = _get_scopes(root_dir)
         self.__locales = set(self.__langs.keys())
         self.select_local()
@@ -172,26 +185,35 @@ class _LangConfig:
 
     def load_data(self, locale: str, data: Raw):
         if locale in self.__langs:
-            self.__langs[locale] = merge(flatten(data), self.__langs[locale], self.__frozen)
+            source = flatten(data)
+            target = self.__langs[locale]
+            for scope, ignores in self.__frozen.items():
+                if scope not in target or scope not in source:
+                    continue
+                if not ignores:
+                    source.pop(scope)
+                else:
+                    for i in ignores:
+                        source[scope] = {k: v for k, v in source[scope].items() if not (k.startswith(i) and k in target[scope])}
+            self.__langs[locale] = merge(source, target)
         else:
             self.__locales.add(locale)
             self.__langs[locale] = flatten(data)
-        for key in self.__require:
-            parts = key.split(".", 1)
-            s = parts[0]
-            t = parts[1] if len(parts) > 1 else None
-            if s not in self.__langs[locale]:
-                raise KeyError(self.require("lang", "miss_require_scope", locale).format(locale=locale, target=s))
-            if t and t not in self.__langs[locale][s]:
-                raise KeyError(self.require("lang", "miss_require_type", locale).format(locale=locale, scope=s, target=t))
+        for scope, requries in self.__require.items():
+            if scope not in self.__langs[locale]:
+                raise KeyError(self.require("lang", "miss_require_scope", locale).format(locale=locale, target=scope))
+            for t in requries:
+                if any(k.startswith(t) for k in self.__langs[locale][scope]):
+                    continue
+                raise KeyError(self.require("lang", "miss_require_type", locale).format(locale=locale, scope=scope, target=t))
 
     def load_file(self, filepath: Path):
         return self.load_data(filepath.stem, _get_lang(filepath))
 
     def load_config(self, config: _LangDict):
         self.__locale = config.get("default", self.__locale)
-        self.__frozen.extend(config.get("frozen", []))
-        self.__require.extend(config.get("require", []))
+        self.__frozen = merge(_expand(config.get("frozen", [])), self.__frozen)
+        self.__require = merge(_expand(config.get("require", [])), self.__require)
         self.select_local()
 
     def load(self, root: Path) -> Self:

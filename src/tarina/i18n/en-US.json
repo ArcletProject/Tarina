@@ -7,6 +7,6 @@
       "type": "'{target}' is not a valid type in '{locale}:{scope}'"
     },
     "miss_require_scope": "lang file '{locale}' missed require scope '{target}'",
-    "miss_require_type": "'{scope}' missed require type {target} in lang file '{locale}'"
+    "miss_require_type": "'{scope}' missed require type '{target}' in lang file '{locale}'"
   }
 }

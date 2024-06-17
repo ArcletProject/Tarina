@@ -162,6 +162,9 @@ def schema(*_):
     root = Path.cwd()
     schema_file = root / ".lang.schema.json"
     created = not schema_file.exists()
+
+    with (root / ".template.schema.json").open("w+") as f:
+        f.write(TEMPLATE_SCHEMA)
     try:
         write_lang_schema(Path.cwd())
     except Exception as e:
@@ -232,7 +235,7 @@ def main():
     default_parser.add_argument("locale", type=str, nargs="?", help="lang locale to set as default")
     default_parser.set_defaults(func=default)
 
-    schema_parser = subparsers.add_parser("schema", help="generate or update lang schema")
+    schema_parser = subparsers.add_parser("schema", help="generate or update lang schema and template schema")
     schema_parser.set_defaults(func=schema)
 
     model_parser = subparsers.add_parser("model", help="generate or update lang model")
