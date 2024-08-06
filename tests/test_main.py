@@ -119,13 +119,14 @@ def test_init_spec():
 
 
 def test_date_parser():
-    from datetime import datetime
+    from datetime import datetime, timedelta
 
     from tarina import DateParser
 
     assert DateParser.parse("2021-01-01") == datetime(2021, 1, 1)
     assert DateParser.parse("2021-01-01 12:34:56") == datetime(2021, 1, 1, 12, 34, 56)
-
+    assert DateParser.parse("1m") == datetime.now() + timedelta(minutes=1)
+    assert DateParser.parse("h3") == datetime.now() + timedelta(hours=3)
 
 def test_safe_eval():
     from tarina import safe_eval

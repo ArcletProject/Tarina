@@ -100,6 +100,7 @@ LANG_TEMPLATE_YAML = """\
 
 """
 
+
 def new(*_):
     i18n_dir = Path.cwd() / "i18n"
     if i18n_dir.exists():
@@ -191,7 +192,6 @@ def model(*_):
         print(f"model for lang file {'created' if created else 'updated'}. Now you can create or update your lang files.")
 
 
-
 def create(args):
     root = Path.cwd()
     if args.yaml:
@@ -200,10 +200,10 @@ def create(args):
         with lang_file.open("w+") as f:
             f.write(LANG_TEMPLATE_YAML)
     else:
-      lang_file = root / f"{args.name}.json"
+        lang_file = root / f"{args.name}.json"
 
-      with lang_file.open("w+") as f:
-          f.write(LANG_TEMPLATE_JSON)
+        with lang_file.open("w+") as f:
+            f.write(LANG_TEMPLATE_JSON)
 
     print(f"lang file created: {lang_file}")
 
@@ -217,7 +217,6 @@ def delete(args):
         print(f"lang file deleted: {lang_file}")
     else:
         print(f"lang file not found: {lang_file}")
-
 
 
 def main():
@@ -256,6 +255,7 @@ def main():
         args.func(args)
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()
