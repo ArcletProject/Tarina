@@ -11,6 +11,7 @@ def split_once(text: str, separates: tuple[str, ...], crlf: bool = True):
         text (str): 要切割的字符串
         separates (tuple[str, ...]): 切割符.
         crlf (bool): 是否去除 \n 与 \r，默认为 True
+
     Returns:
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
@@ -40,8 +41,6 @@ def split_once(text: str, separates: tuple[str, ...], crlf: bool = True):
         else:
             out_text += char
             escape = False
-    if quotation:
-        raise SyntaxError(f"Unterminated string: {text!r}")
     return out_text, text[index:]
 
 
@@ -77,6 +76,4 @@ def split(text: str, separates: tuple[str, ...], crlf: bool = True):
         else:
             result += char
             escape = False
-    if quotation:
-        raise SyntaxError(f"Unterminated string: {text!r}")
     return result.split("\0") if result else []

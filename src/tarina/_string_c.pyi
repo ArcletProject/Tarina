@@ -8,9 +8,6 @@ def split(text: str, separates: tuple[str, ...], crlf: bool = True) -> list[str]
 
     Returns:
         List[str]: 切割后的字符串, 可能含有空格
-
-    Raises:
-        SyntaxError: 未闭合的引号
     """
     ...
 
@@ -23,8 +20,5 @@ def split_once(text: str, separates: tuple[str, ...], crlf: bool = True) -> tupl
         crlf (bool): 是否去除 \n 与 \r，默认为 True
     Returns:
         Tuple[str, str]: 切割后的字符串, 可能含有空格
-
-    Raises:
-        SyntaxError: 未闭合的引号
     """
     ...
