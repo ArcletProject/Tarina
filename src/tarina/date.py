@@ -14,7 +14,7 @@ TIME_REGEXP = re.compile(
     "^"
     + "".join(
         map(
-            lambda unit: f"({NUMERIC}{unit})?",
+            lambda unit: f"(?:(?:{unit}({NUMERIC}))|(?:({NUMERIC}){unit}))?",
             [
                 "w(?:eek(?:s)?)?",
                 "d(?:ay(?:s)?)?",
@@ -64,13 +64,13 @@ class DateParser:
 
     @classmethod
     def parse(cls, pattern: str):
-        if capture := TIME_REGEXP.match(pattern):
+        if (capture := TIME_REGEXP.match(pattern)) and capture.groups():
             if stamp := (
-                float(capture[1] or 0) * WEEK
-                + float(capture[2] or 0) * DAY
-                + float(capture[3] or 0) * HOUR
-                + float(capture[4] or 0) * MINUTE
-                + float(capture[5] or 0) * SECOND
+                float(capture[1] or capture[2] or 0) * WEEK
+                + float(capture[3] or capture[4] or 0) * DAY
+                + float(capture[5] or capture[6] or 0) * HOUR
+                + float(capture[7] or capture[8] or 0) * MINUTE
+                + float(capture[9] or capture[10] or 0) * SECOND
             ):
                 return datetime.now() + timedelta(milliseconds=stamp)
         if re.match(r"^\d{1,2}(:\d{1,2}){1,2}$", pattern):
