@@ -151,6 +151,7 @@ class _LangConfig:
         self._root_config = _get_config(root_dir)
         self.__configs: dict["Path", _LangDict] = {root_dir.resolve(): self._root_config}
         self.__locale: str = self._root_config["default"]
+        self.__default_locale: str = self._root_config["default"]
         self.__langs: dict[str, dict[str, dict[str, str]]] = _get_scopes(root_dir)
         self.__locales = set(self.__langs.keys())
         self.__frozen: dict[str, list[str]] = self._root_config["frozen"].copy()
@@ -217,7 +218,7 @@ class _LangConfig:
 
     def load_config(self, dir_path: Path):
         config = _get_config(dir_path)
-        self.__locale = config.get("default", self.__locale)
+        self.__default_locale = config.get("default", self._root_config["default"])
         self.__configs[dir_path.resolve()] = config
         self.__frozen = merge(config.get("frozen", {}), self.__frozen)
         self.select_local()
@@ -239,16 +240,16 @@ class _LangConfig:
             _types = self.__langs[locale][scope]
         elif scope in self.__langs[self.__locale]:
             _types = self.__langs[self.__locale][scope]
-        elif scope in self.__langs[(default := _get_config(root_dir)["default"])]:
-            _types = self.__langs[default][scope]
+        elif scope in self.__langs[self.__default_locale]:
+            _types = self.__langs[self.__default_locale][scope]
         else:
             raise ValueError(self.__langs[locale]["lang"]["error.scope"].format(target=scope, locale=locale))
         if type in _types:
             return _types[type]
         elif type in self.__langs[self.__locale][scope]:
             return self.__langs[self.__locale][scope][type]
-        elif type in self.__langs[(default := _get_config(root_dir)["default"])][scope]:
-            return self.__langs[default][scope][type]
+        elif type in self.__langs[self.__default_locale][scope]:
+            return self.__langs[self.__default_locale][scope][type]
         else:
             raise ValueError(self.__langs[locale]["lang"]["error.type"].format(target=type, locale=locale, scope=scope))
 
