@@ -1,5 +1,7 @@
 import re
 from pathlib import Path
+from typing import Optional
+
 from tarina.lang import lang
 from tarina.lang.schema import _Subtypes, _TemplateDict, get_template
 from tarina.tools import pascal_case
@@ -11,8 +13,8 @@ class LangItem:
         self.scope = scope
         self.type = type
 
-    def __call__(self, **format_kwargs):
-        return lang.require(self.scope, self.type).format(**format_kwargs)
+    def __call__(self, locale: Optional[str] = None, **format_kwargs):
+        return lang.require(self.scope, self.type, locale).format(**format_kwargs)
 
     def __iter__(self):
         return iter([self.scope, self.type])
