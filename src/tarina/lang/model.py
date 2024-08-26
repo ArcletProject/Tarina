@@ -19,6 +19,7 @@ class LangItem:
     def __iter__(self):
         return iter([self.scope, self.type])
 
+
 class LangModel:
     pass
 
@@ -34,7 +35,6 @@ from tarina.lang.model import LangModel, LangItem
 {scopes}\
 """
 
-
 SCOPE_TEMPLATE = """\
 class {scope}:
 {types}
@@ -44,7 +44,6 @@ class {scope}:
 TYPE_TEMPLATE = """\
     {name}: LangItem = LangItem("{scope}", "{type}")
 """
-
 
 
 def generate_model(root: Path):
@@ -63,14 +62,15 @@ def generate_model(root: Path):
             scope_class += "_"
 
         def visit_types(_scope: str, _types: "list[str | _Subtypes]", prefix: str = ""):
-        
+
             types_str = ""
             for t in _types:
                 if isinstance(t, dict):
                     subtype = re.sub(r"[\W\s]+", "_", t["subtype"])
                     if subtype in keyword.kwlist:
                         subtype += "_"
-                    yield from visit_types(f"{_scope}{pascal_case(subtype)}", t["types"], prefix=f"{prefix}{t['subtype']}.")
+                    yield from visit_types(f"{_scope}{pascal_case(subtype)}", t["types"],
+                                           prefix=f"{prefix}{t['subtype']}.")
                     types_str += f"    {subtype} = {_scope}{pascal_case(subtype)}\n"
                 else:
                     name = re.sub(r"[\W\s]+", "_", t)
@@ -78,6 +78,7 @@ def generate_model(root: Path):
                         name += "_"
                     types_str += TYPE_TEMPLATE.format(name=name, scope=s["scope"], type=f"{prefix}{t}")
             yield SCOPE_TEMPLATE.format(scope=_scope, types=types_str)
+
         scopes_classes += "\n".join(visit_types(scope_class, s["types"]))
         scopes_str += f"    {scope} = {scope_class}\n"
     return MODEL_TEMPLATE.format(scope_classes=scopes_classes, scopes=scopes_str)

@@ -10,7 +10,6 @@ class Lang_Error:
     type: LangItem = LangItem("lang", "error.type")
 
 
-
 class Lang_:
     error = Lang_Error
     miss_require_scope: LangItem = LangItem("lang", "miss_require_scope")

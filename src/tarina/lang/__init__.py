@@ -16,8 +16,8 @@ WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name =
 
 class _LangDict(TypedDict):
     default: str
-    frozen: list[str]
-    require: list[str]
+    frozen: dict[str, list[str]]
+    require: dict[str, list[str]]
 
 
 def _get_win_locale_with_ctypes() -> str | None:
@@ -57,8 +57,12 @@ def _get_config(root: Path) -> _LangDict:
     if not (root / ".config.json").exists():
         raise FileNotFoundError(f"Config file not found in {root}")
     with (root / ".config.json").open("r", encoding="utf-8") as f:
-        return cast(_LangDict, json.load(f))
-
+        data = json.load(f)
+        if "frozen" in data:
+            data["frozen"] = _expand(data["frozen"])
+        if "require" in data:
+            data["require"] = _expand(data["require"])
+        return cast(_LangDict, data)
 
 
 Types = Union[str, Dict[str, "Types"]]
@@ -132,7 +136,6 @@ def _get_lang(file: Path) -> Raw:
     return data
 
 
-
 def _get_scopes(root: Path) -> dict[str, dict[str, dict[str, str]]]:
     result = {}
     for i in root.iterdir():
@@ -145,12 +148,12 @@ def _get_scopes(root: Path) -> dict[str, dict[str, dict[str, str]]]:
 @final
 class _LangConfig:
     def __init__(self):
-        __config = _get_config(root_dir)
-        self.__locale: str = __config["default"]
-        self.__frozen: dict[str, list[str]] = _expand(__config["frozen"])
-        self.__require: dict[str, list[str]] = _expand(__config["require"])
+        self._root_config = _get_config(root_dir)
+        self.__configs: dict["Path", _LangDict] = {root_dir.resolve(): self._root_config}
+        self.__locale: str = self._root_config["default"]
         self.__langs: dict[str, dict[str, dict[str, str]]] = _get_scopes(root_dir)
         self.__locales = set(self.__langs.keys())
+        self.__frozen: dict[str, list[str]] = self._root_config["frozen"].copy()
         self.select_local()
 
     @property
@@ -183,7 +186,7 @@ class _LangConfig:
         with (_root / ".config.json").open("w+", encoding="utf-8") as f:
             json.dump(config, f, ensure_ascii=False, indent=2)
 
-    def load_data(self, locale: str, data: Raw):
+    def load_data(self, locale: str, data: Raw, config: _LangDict | None = None):
         if locale in self.__langs:
             source = flatten(data)
             target = self.__langs[locale]
@@ -199,7 +202,9 @@ class _LangConfig:
         else:
             self.__locales.add(locale)
             self.__langs[locale] = flatten(data)
-        for scope, requries in self.__require.items():
+        if not config:
+            return
+        for scope, requries in config["require"].items():
             if scope not in self.__langs[locale]:
                 raise KeyError(self.require("lang", "miss_require_scope", locale).format(locale=locale, target=scope))
             for t in requries:
@@ -207,21 +212,23 @@ class _LangConfig:
                     continue
                 raise KeyError(self.require("lang", "miss_require_type", locale).format(locale=locale, scope=scope, target=t))
 
-    def load_file(self, filepath: Path):
-        return self.load_data(filepath.stem, _get_lang(filepath))
+    def load_file(self, filepath: Path, config: _LangDict | None = None):
+        return self.load_data(filepath.stem, _get_lang(filepath), config)
 
-    def load_config(self, config: _LangDict):
+    def load_config(self, dir_path: Path):
+        config = _get_config(dir_path)
         self.__locale = config.get("default", self.__locale)
-        self.__frozen = merge(_expand(config.get("frozen", [])), self.__frozen)
-        self.__require = merge(_expand(config.get("require", [])), self.__require)
+        self.__configs[dir_path.resolve()] = config
+        self.__frozen = merge(config.get("frozen", {}), self.__frozen)
         self.select_local()
+        return config
 
     def load(self, root: Path) -> Self:
-        self.load_config(_get_config(root))
+        config = self.load_config(root)
         for i in root.iterdir():
             if not i.is_file() or i.name.startswith(".") or i.suffix not in (".json", ".yaml", ".yml"):
                 continue
-            self.load_file(i)
+            self.load_file(i, config)
         return self
 
     def require(self, scope: str, type: str, locale: str | None = None) -> str:
@@ -251,6 +258,8 @@ class _LangConfig:
             raise ValueError(self.__langs[self.__locale]["lang"]["error.locale"].format(target=locale))
         if scope in self.__frozen:
             raise ValueError(self.__langs[locale]["lang"]["error.scope"].format(target=scope, locale=locale))
+        elif type in self.__frozen.get(scope, []):
+            raise ValueError(self.__langs[locale]["lang"]["error.type"].format(target=type, locale=locale, scope=scope))
         self.__langs[locale].setdefault(scope, {})[type] = content
 
     def __repr__(self):
