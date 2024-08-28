@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import contextlib
 import json
 import locale
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Final, TypedDict, Union, cast, final
+from typing import Dict, Final, Union, final
 
 from typing_extensions import Self
 
@@ -14,10 +15,13 @@ root_dir: Final[Path] = Path(__file__).parent.parent / "i18n"
 WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name == "nt")
 
 
-class _LangDict(TypedDict):
-    default: str
-    frozen: dict[str, list[str]]
-    require: dict[str, list[str]]
+@dataclass
+class _LangConfigData:
+    default: str | None = None
+    frozen: dict[str, list[str]] | None = None
+    require: dict[str, list[str]] | None = None
+
+    locales: set[str] = field(default_factory=set)
 
 
 def _get_win_locale_with_ctypes() -> str | None:
@@ -53,7 +57,7 @@ def get_locale() -> str | None:
     return locale.getlocale(locale.LC_MESSAGES)[0]  # type: ignore
 
 
-def _get_config(root: Path) -> _LangDict:
+def _get_config(root: Path) -> _LangConfigData:
     if not (root / ".config.json").exists():
         raise FileNotFoundError(f"Config file not found in {root}")
     with (root / ".config.json").open("r", encoding="utf-8") as f:
@@ -62,7 +66,7 @@ def _get_config(root: Path) -> _LangDict:
             data["frozen"] = _expand(data["frozen"])
         if "require" in data:
             data["require"] = _expand(data["require"])
-        return cast(_LangDict, data)
+        return _LangConfigData(**data)
 
 
 Types = Union[str, Dict[str, "Types"]]
@@ -149,17 +153,20 @@ def _get_scopes(root: Path) -> dict[str, dict[str, dict[str, str]]]:
 class _LangConfig:
     def __init__(self):
         self._root_config = _get_config(root_dir)
-        self.__configs: dict["Path", _LangDict] = {root_dir.resolve(): self._root_config}
-        self.__locale: str = self._root_config["default"]
-        self.__default_locale: str = self._root_config["default"]
+        self.__configs: dict[str, _LangConfigData] = {"$root": self._root_config}
+        self.__locale: str = self._root_config.default or "en-US"
+        self.__default_locale: str = self._root_config.default or "en-US"
         self.__langs: dict[str, dict[str, dict[str, str]]] = _get_scopes(root_dir)
         self.__locales = set(self.__langs.keys())
-        self.__frozen: dict[str, list[str]] = self._root_config["frozen"].copy()
+        self.__frozen: dict[str, list[str]] = (self._root_config.frozen or {}).copy()
         self.select_local()
 
     @property
     def locales(self):
         return set(sorted(self.__locales))
+
+    def locales_in(self, config_name: str):
+        return self.__configs[config_name].locales
 
     @property
     def current(self):
@@ -180,14 +187,9 @@ class _LangConfig:
         self.__locale = locale
         return self
 
-    def save(self, root: Path | None = None):
-        _root = root or root_dir
-        config = _get_config(_root)
-        config["default"] = self.__locale
-        with (_root / ".config.json").open("w+", encoding="utf-8") as f:
-            json.dump(config, f, ensure_ascii=False, indent=2)
-
-    def load_data(self, locale: str, data: Raw, config: _LangDict | None = None):
+    def load_data(self, locale: str, data: Raw, config: _LangConfigData | None = None):
+        if config:
+            config.locales.add(locale)
         if locale in self.__langs:
             source = flatten(data)
             target = self.__langs[locale]
@@ -203,9 +205,9 @@ class _LangConfig:
         else:
             self.__locales.add(locale)
             self.__langs[locale] = flatten(data)
-        if not config:
+        if not config or not config.require:
             return
-        for scope, requries in config["require"].items():
+        for scope, requries in config.require.items():
             if scope not in self.__langs[locale]:
                 raise KeyError(self.require("lang", "miss_require_scope", locale).format(locale=locale, target=scope))
             for t in requries:
@@ -213,19 +215,19 @@ class _LangConfig:
                     continue
                 raise KeyError(self.require("lang", "miss_require_type", locale).format(locale=locale, scope=scope, target=t))
 
-    def load_file(self, filepath: Path, config: _LangDict | None = None):
+    def load_file(self, filepath: Path, config: _LangConfigData | None = None):
         return self.load_data(filepath.stem, _get_lang(filepath), config)
 
-    def load_config(self, dir_path: Path):
+    def load_config(self, dir_path: Path, name: str | None = None):
         config = _get_config(dir_path)
-        self.__default_locale = config.get("default", self._root_config["default"])
-        self.__configs[dir_path.resolve()] = config
-        self.__frozen = merge(config.get("frozen", {}), self.__frozen)
+        self.__default_locale = config.default or self.__default_locale
+        self.__configs[name or dir_path.resolve().parent.name] = config
+        self.__frozen = merge(config.frozen or {}, self.__frozen)
         self.select_local()
         return config
 
-    def load(self, root: Path) -> Self:
-        config = self.load_config(root)
+    def load(self, root: Path, name: str | None = None) -> Self:
+        config = self.load_config(root, name)
         for i in root.iterdir():
             if not i.is_file() or i.name.startswith(".") or i.suffix not in (".json", ".yaml", ".yml"):
                 continue
