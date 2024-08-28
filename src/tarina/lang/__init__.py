@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import contextlib
 import json
 import locale
 import os
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Final, Union, final
 
@@ -207,7 +207,9 @@ class _LangConfig:
                     source.pop(scope)
                 else:
                     for i in ignores:
-                        source[scope] = {k: v for k, v in source[scope].items() if not (k.startswith(i) and k in target[scope])}
+                        source[scope] = {
+                            k: v for k, v in source[scope].items() if not (k.startswith(i) and k in target[scope])
+                        }
             self.__langs[locale] = merge(source, target)
         else:
             self.__locales.add(locale)
@@ -220,7 +222,9 @@ class _LangConfig:
             for t in requries:
                 if any(k.startswith(t) for k in self.__langs[locale][scope]):
                     continue
-                raise KeyError(self.require("lang", "miss_require_type", locale).format(locale=locale, scope=scope, target=t))
+                raise KeyError(
+                    self.require("lang", "miss_require_type", locale).format(locale=locale, scope=scope, target=t)
+                )
 
     def load_file(self, filepath: Path, config: _LangConfigData | None = None):
         return self.load_data(filepath.stem, _get_lang(filepath), config)

@@ -1,8 +1,9 @@
-from argparse import ArgumentParser
-from tarina.lang.schema import write_lang_schema
-from tarina.lang.model import write_model
-from pathlib import Path
 import json
+from argparse import ArgumentParser
+from pathlib import Path
+
+from tarina.lang.model import write_model
+from tarina.lang.schema import write_lang_schema
 
 CONFIG_TEMPLATE = """\
 {
@@ -20,7 +21,6 @@ CONFIG_INIT = """\
 from pathlib import Path
 
 from tarina.lang import lang
-
 
 lang.load(Path(__file__).parent)
 """
@@ -172,7 +172,9 @@ def schema(*_):
     except Exception as e:
         print(repr(e))
     else:
-        print(f"schema for lang file {'created' if created else 'updated'}. Now you can create or update your lang files.")
+        print(
+            f"schema for lang file {'created' if created else 'updated'}. Now you can create or update your lang files."
+        )
 
 
 def model(*_):
@@ -190,7 +192,9 @@ def model(*_):
     except Exception as e:
         print(repr(e))
     else:
-        print(f"model for lang file {'created' if created else 'updated'}. Now you can create or update your lang files.")
+        print(
+            f"model for lang file {'created' if created else 'updated'}. Now you can create or update your lang files."
+        )
 
 
 def create(args):
