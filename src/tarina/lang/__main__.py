@@ -8,7 +8,8 @@ CONFIG_TEMPLATE = """\
 {
   "default": "zh-CN",
   "frozen": [],
-  "require": []
+  "require": [],
+  "name": null,
 }
 """
 

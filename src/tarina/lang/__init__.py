@@ -20,8 +20,15 @@ class _LangConfigData:
     default: str | None = None
     frozen: dict[str, list[str]] | None = None
     require: dict[str, list[str]] | None = None
+    name: str | None = None
 
     locales: set[str] = field(default_factory=set)
+
+    def __post_init__(self):
+        if isinstance(self.name, str):
+            self.name = self.name.strip()
+            if not self.name:
+                self.name = None
 
 
 def _get_win_locale_with_ctypes() -> str | None:
@@ -218,16 +225,16 @@ class _LangConfig:
     def load_file(self, filepath: Path, config: _LangConfigData | None = None):
         return self.load_data(filepath.stem, _get_lang(filepath), config)
 
-    def load_config(self, dir_path: Path, name: str | None = None):
+    def load_config(self, dir_path: Path):
         config = _get_config(dir_path)
         self.__default_locale = config.default or self.__default_locale
-        self.__configs[name or dir_path.resolve().parent.name] = config
+        self.__configs[config.name or dir_path.resolve().parent.name] = config
         self.__frozen = merge(config.frozen or {}, self.__frozen)
         self.select_local()
         return config
 
-    def load(self, root: Path, name: str | None = None) -> Self:
-        config = self.load_config(root, name)
+    def load(self, root: Path) -> Self:
+        config = self.load_config(root)
         for i in root.iterdir():
             if not i.is_file() or i.name.startswith(".") or i.suffix not in (".json", ".yaml", ".yml"):
                 continue
