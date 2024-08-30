@@ -2,8 +2,8 @@
 # cython: cdivision=True
 # cython: initializedcheck=False
 
-from cpython.list cimport PyList_Append, PyList_SET_ITEM
-from cpython.object cimport Py_SIZE, PyObject
+from cpython.list cimport PyList_Append
+from cpython.object cimport PyObject
 from cpython.unicode cimport PyUnicode_GET_LENGTH, PyUnicode_Join, PyUnicode_Split
 
 
@@ -50,7 +50,7 @@ def split(str text, tuple separates, char crlf=True):
                 PyList_Append(result, ch)
                 continue
             if escape:
-                PyList_SET_ITEM(result, Py_SIZE(result)-1 , ch)
+                result[-1] = ch
         elif (quotation == 0 and contains(separates, ch)) or (crlf and set_contains_key(CRLF, ch)):
             if result and result[-1] != '\1':
                 PyList_Append(result, '\1')
@@ -93,7 +93,7 @@ def split_once(str text, tuple separates, char crlf=True):
                 PyList_Append(out_text, ch)
                 continue
             if escape:
-                PyList_SET_ITEM(out_text, Py_SIZE(out_text) - 1, ch)
+                out_text[-1] = ch
         else:
             PyList_Append(out_text, ch)
             escape = 0
