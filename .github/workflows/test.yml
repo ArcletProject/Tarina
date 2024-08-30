@@ -51,7 +51,7 @@ jobs:
           pdm sync -G:all --no-self
       - name: Cythonize
         run: |
-          make cythonize
+          pdm run make
       - name: Install self
         run: |
           pdm install
