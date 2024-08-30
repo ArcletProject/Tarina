@@ -30,3 +30,31 @@ jobs:
       - name: Test & Report
         run: |
           pdm run test
+
+  test_with_extensions:
+    strategy:
+      matrix:
+        py_ver: ['3.8', '3.9', '3.10', '3.11', '3.12']
+    runs-on:  ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        name: Ensure Python Runtime
+        with:
+          python-version: ${{matrix.py_ver}}
+          architecture: 'x64'
+      - name: Ensure PDM
+        run: |
+          python3 -m pip install pdm
+      - name: Install Package
+        run: |
+          pdm sync -G:all --no-self
+      - name: Cythonize
+        run: |
+          make cythonize
+      - name: Install self
+        run: |
+          pdm install
+      - name: Test & Report
+        run: |
+          pdm run test
