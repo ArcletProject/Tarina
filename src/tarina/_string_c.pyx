@@ -74,7 +74,7 @@ cpdef inline list split(str text, str separator, char crlf=True):
 
 
 cpdef inline tuple split_once(str text, str separator, char crlf=True):
-    text = text.lstrip()
+    text = text.lstrip(separator)
     cdef:
         Py_ssize_t index = 0
         list out_text = []

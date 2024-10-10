@@ -16,7 +16,7 @@ def split_once(text: str, separator: str, crlf: bool = True):
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
     index, out_text, quotation, escape, sep = 0, "", "", False, False
-    text = text.lstrip()
+    text = text.lstrip(separator)
     first_quoted_sep_index = -1
     last_quote_index = 0
     tlen = len(text)
