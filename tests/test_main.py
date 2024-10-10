@@ -39,27 +39,37 @@ def test_split_once():
     """测试单次分割函数, 能以引号扩起空格, 并允许保留引号"""
     from tarina import split_once
 
-    assert split_once("arclet-alconna", (" ",)) == ("arclet-alconna", "")
+    assert split_once("arclet-alconna", " ") == ("arclet-alconna", "")
     text1 = "rrr b bbbb"
     text2 = "'rrr b' bbbb"
     text3 = "\\'rrr b\\' bbbb"
     text4 = "\\'rrr \\b\\' bbbb"
-    assert split_once(text1, (" ",)) == ("rrr", "b bbbb")
-    assert split_once(text2, (" ",)) == ("rrr b", "bbbb")
-    assert split_once(text3, (" ",)) == ("'rrr b'", "bbbb")
-    assert split_once(text4, (" ",)) == ("'rrr \\b'", "bbbb")  # 不消除其他转义字符斜杠
+    assert split_once(text1, " ") == ("rrr", "b bbbb")
+    assert split_once(text2, " ") == ("rrr b", "bbbb")
+    assert split_once(text3, " ") == ("'rrr b'", "bbbb")
+    assert split_once(text4, " ") == ("'rrr \\b'", "bbbb")  # 不消除其他转义字符斜杠
 
-    assert split_once("'rrr b\" b' bbbb", (" ",)) == ('rrr b" b', "bbbb")
-    assert split_once("rrr  bbbb", (" ",)) == ("rrr", "bbbb")
-    assert split_once("rrr 'bbb'", (" ",)) == ("rrr", "'bbb'")
+    assert split_once("'rrr b\" b' bbbb", " ") == ('rrr b" b', "bbbb")
+    assert split_once("rrr  bbbb", " ") == ("rrr", "bbbb")
+    assert split_once("rrr 'bbb'", " ") == ("rrr", "'bbb'")
 
     assert split_once(
         r'\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\",\\"',
-        (" ",)
+       " "
     ) == (
-        r'",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\",\"',
-        ""
+        r'\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\",\\"',
+        ''
     )
+
+    assert (split_once("123456789", " ", True)) == ("123456789", "")
+    assert (split_once("123 456 789", " ", True)) == ("123", "456 789")
+    assert (split_once('"123 456" 789', " ", True)) == ("123 456", "789")
+    assert (split_once('12"3 456" 789', " ", True)) == ('12"3', '456" 789')
+    assert (split_once('12"3 456 789', " ", True)) == ('12"3', '456 789')
+    assert (split_once('"123 456 789', " ", True)) == ('"123', '456 789')
+    assert (split_once('123" 456 789', " ", True)) == ('123"', '456 789')
+    assert (split_once('"""123 456"" 789', " ", True)) == ('"""123 456""', '789')
+    assert (split_once('"123 "456 789', " ", True)) == ('"123', '"456 789')
 
 
 def test_split():
@@ -69,16 +79,20 @@ def test_split():
     text1 = "rrr b bbbb"
     text2 = "'rrr b' bbbb"
     text3 = "\\'rrr b\\' bbbb"
-    assert split(text1, (" ",)) == ["rrr", "b", "bbbb"]
-    assert split(text2, (" ",)) == ["rrr b", "bbbb"]
-    assert split(text3, (" ",)) == ["'rrr b'", "bbbb"]
-    assert split("", (" ",)) == []
-    assert split("  ", (" ",)) == []
+    assert split(text1, " ") == ["rrr", "b", "bbbb"]
+    assert split(text2, " ") == ["rrr b", "bbbb"]
+    assert split(text3, " ") == ["'rrr b'", "bbbb"]
+    assert split("", " ") == []
+    assert split("  ", " ") == []
 
-    try:
-        split('rrr "bbb', (" ",))
-    except SyntaxError as e:
-        assert str(e) == "Unterminated string: 'rrr \"bbb'"
+    assert (split("123 456 789", " ", True)) == ["123", "456", "789"]
+    assert (split('123 "456 789" abc', " ", True)) == ['123', '456 789', 'abc']
+    assert (split('123 45"6 789 abc', " ", True)) == ['123', '45"6', '789', 'abc']
+    assert (split('123 456" 789 abc', " ", True)) == ['123', '456"', '789', 'abc']
+    assert (split('123 456 "789 abc', " ", True)) == ['123', '456', '"789', 'abc']
+    assert (split('123 "456 "789', " ", True)) == ['123', '"456', '"789']
+    assert (split('123 """456 7" 789', " ", True)) == ['123', '456 7', '789']
+    assert (split('123 """456 "789', " ", True)) == ['123', '"456', '"789']
 
 
 def test_lang():
@@ -106,7 +120,7 @@ def test_lang():
     assert lang.require("lang", "error.type") == "test"
     assert lang.require("lang", "error.locale") == "'{target}' 不是合法的语种"
     lang.load_file(Path(__file__).parent / "en-UK.yml")
-    assert lang.locales == {'zh-CN', 'test', 'en-US', 'en-UK'}
+    assert lang.locales == {"zh-CN", "test", "en-US", "en-UK"}
 
 
 def test_init_spec():

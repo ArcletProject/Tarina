@@ -28,7 +28,7 @@ class LRU(Generic[_KT, _VT]):
     @overload
     def get(self, key: _KT, instead: _VT | _T) -> _VT | _T: ...
 
-    def get(self, key: _KT, instead: _VT | _T | None = None)-> _VT | _T | None:
+    def get(self, key: _KT, instead: _VT | _T | None = None) -> _VT | _T | None:
         if key in self.__cache:
             self.__cache.move_to_end(key, last=False)
             return self.__cache[key]
@@ -61,7 +61,7 @@ class LRU(Generic[_KT, _VT]):
     @overload
     def pop(self, key: _KT, default: _VT | _T) -> _VT | _T: ...
 
-    def pop(self, key: _KT, default: _VT | _T | None = None)-> _VT | _T:
+    def pop(self, key: _KT, default: _VT | _T | None = None) -> _VT | _T:
         return self.__cache.pop(key, default)
 
     def popitem(self, least_recent: bool = True) -> tuple[_KT, _VT]:

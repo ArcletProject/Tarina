@@ -133,3 +133,6 @@ dmypy.json
 
 # PyCharm files
 .idea/
+
+# Compiled cython files
+src/tarina/_string_c.c

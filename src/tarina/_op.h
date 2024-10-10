@@ -19,21 +19,73 @@ static inline PyObject * tupleitem(PyObject *a, Py_ssize_t i)
     return ((PyTupleObject*)a)->ob_item[i];
 }
 
+// #include "stringlib/asciilib.h"
+// #include "stringlib/fastsearch.h"
+// #include "stringlib/partition.h"
+// #include "stringlib/split.h"
+// #include "stringlib/count.h"
+// #include "stringlib/find.h"
+// #include "stringlib/find_max_char.h"
+// #include "stringlib/undef.h"
 
-static int contains(PyObject *chs, Py_UCS4 ch) {
-    Py_ssize_t i = 0;
-    Py_ssize_t length = tuplesize(chs);
-    while (1) {
-        if (i >= length) {
-            return 0;
-        }
-        if (ch == PyUnicode_READ_CHAR(tupleitem(chs, i), 0)) {
-            return 1;
-        }
-        i++;
-    }
-    return 0;
-}
+// #include "stringlib/ucs1lib.h"
+// #include "stringlib/fastsearch.h"
+// #include "stringlib/partition.h"
+// #include "stringlib/split.h"
+// #include "stringlib/count.h"
+// #include "stringlib/find.h"
+// #include "stringlib/replace.h"
+// #include "stringlib/find_max_char.h"
+// #include "stringlib/undef.h"
+
+// #include "stringlib/ucs2lib.h"
+// #include "stringlib/fastsearch.h"
+// #include "stringlib/partition.h"
+// #include "stringlib/split.h"
+// #include "stringlib/count.h"
+// #include "stringlib/find.h"
+// #include "stringlib/replace.h"
+// #include "stringlib/find_max_char.h"
+// #include "stringlib/undef.h"
+
+// #include "stringlib/ucs4lib.h"
+// #include "stringlib/fastsearch.h"
+// #include "stringlib/partition.h"
+// #include "stringlib/split.h"
+// #include "stringlib/count.h"
+// #include "stringlib/find.h"
+// #include "stringlib/replace.h"
+// #include "stringlib/find_max_char.h"
+// #include "stringlib/undef.h"
+
+// static inline Py_ssize_t
+// findchar(const void *s, int kind, Py_ssize_t size, Py_UCS4 ch)
+// {
+//     switch (kind) {
+//     case PyUnicode_1BYTE_KIND:
+//         if ((Py_UCS1) ch != ch)
+//             return -1;
+//         return ucs1lib_find_char((const Py_UCS1 *) s, size, (Py_UCS1) ch);
+//     case PyUnicode_2BYTE_KIND:
+//         if ((Py_UCS2) ch != ch)
+//             return -1;
+//         return ucs2lib_find_char((const Py_UCS2 *) s, size, (Py_UCS2) ch);
+//     case PyUnicode_4BYTE_KIND:
+//         return ucs4lib_find_char((const Py_UCS4 *) s, size, ch);
+//     default:
+//         Py_UNREACHABLE();
+//     }
+// }
+
+// static int contains(PyObject *str, Py_UCS4 ch) {
+//     const void *buf;
+//     int result, kind, len;
+//     kind = PyUnicode_KIND(str);
+//     len = PyUnicode_GET_LENGTH(str);
+//     buf = PyUnicode_DATA(str);
+//     result = findchar((const char *)buf, kind, len, ch) != -1;
+//     return result;
+// }
 
 
 static setentry *

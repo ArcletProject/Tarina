@@ -137,12 +137,8 @@ def pascal_case(source: str) -> str:
 
 
 def param_case(source: str) -> str:
-    return re.sub(
-        ".[A-Z]+", lambda mat: mat[0][0] + "-" + mat[0][1:].lower(), uncapitalize(source).replace("_", "-")
-    )
+    return re.sub(".[A-Z]+", lambda mat: mat[0][0] + "-" + mat[0][1:].lower(), uncapitalize(source).replace("_", "-"))
 
 
 def snake_case(source: str) -> str:
-    return re.sub(
-        ".[A-Z]", lambda mat: mat[0][0] + "_" + mat[0][1:].lower(), uncapitalize(source).replace("-", "_")
-    )
+    return re.sub(".[A-Z]", lambda mat: mat[0][0] + "_" + mat[0][1:].lower(), uncapitalize(source).replace("-", "_"))
