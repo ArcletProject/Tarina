@@ -6,6 +6,7 @@ import locale
 import os
 import sys
 from dataclasses import dataclass, field
+from inspect import stack
 from pathlib import Path
 from typing import Dict, Final, Union, final
 
@@ -232,7 +233,7 @@ class _LangConfig:
     def load_config(self, dir_path: Path):
         config = _get_config(dir_path)
         self.__default_locale = config.default or self.__default_locale
-        self.__configs[config.name or dir_path.resolve().parent.name] = config
+        self.__configs[config.name or stack()[2].frame.f_globals["__name__"].rsplit(".", 1)[0]] = config
         self.__frozen = merge(config.frozen or {}, self.__frozen)
         self.select_local()
         return config
