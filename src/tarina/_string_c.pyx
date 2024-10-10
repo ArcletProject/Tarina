@@ -71,7 +71,6 @@ def split_once(str text, tuple separates, char crlf=True):
     cdef char escape = 0
     cdef char sep = 0
     cdef Py_ssize_t length = PyUnicode_GET_LENGTH(text)
-
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
         index += 1

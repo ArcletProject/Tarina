@@ -238,9 +238,6 @@ class _SentinelClass(enum.Enum):
     _Sentinel = object()
 
 
-_SENTINEL: Final = _SentinelClass._Sentinel
-
-
 T_Iteritems = Callable[[Children[T]], Iterable[Tuple[str, "_Node[T]"]]]
 
 PathConv = Callable[[Tuple[str, ...]], str]
@@ -265,7 +262,7 @@ class _Node(Generic[V]):
 
     def __init__(self):
         self.children: Children[V] = _EMPTY
-        self.value: V | Literal[_SENTINEL] = _SENTINEL
+        self.value: V | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel
 
     def merge(self, other: _Node[V], overwrite: bool):
         """Move children from other node into this one.
@@ -277,7 +274,7 @@ class _Node(Generic[V]):
         queue = [(self, other)]
         while queue:
             lhs, rhs = queue.pop()
-            if lhs.value is _SENTINEL or (overwrite and rhs.value is not _SENTINEL):
+            if lhs.value is _SentinelClass._Sentinel or (overwrite and rhs.value is not _SentinelClass._Sentinel):
                 lhs.value = rhs.value
             if lhs.children is _EMPTY:
                 lhs.children = rhs.children
@@ -308,10 +305,10 @@ class _Node(Generic[V]):
         node = self
         stack: list[Iterator[tuple[str, _Node[V]]]] = []
         while True:
-            if node.value is not _SENTINEL:
+            if node.value is not _SentinelClass._Sentinel:
                 yield path, node.value
 
-            if (not shallow or node.value is _SENTINEL) and node.children:
+            if (not shallow or node.value is _SentinelClass._Sentinel) and node.children:
                 stack.append(iter(items(node.children)))
                 path.append("")
 
@@ -354,7 +351,7 @@ class _Node(Generic[V]):
         children = (node.traverse(node_factory, path_conv, path + [step], items) for step, node in items(self.children))
 
         value_maybe = None
-        if self.value is not _SENTINEL:
+        if self.value is not _SentinelClass._Sentinel:
             value_maybe = self.value
 
         return node_factory(path_conv, tuple(path), children, value_maybe)
@@ -456,12 +453,12 @@ class _Node(Generic[V]):
             to reconstruct the node and its full hierarchy.
         """
         # Like iterate, we don't recurse so pickling works on deep tries.
-        state: list = [] if self.value is _SENTINEL else [0]
+        state: list = [] if self.value is _SentinelClass._Sentinel else [0]
         last_cmd = 0
         node = self
         stack = []
         while True:
-            if node.value is not _SENTINEL:
+            if node.value is not _SentinelClass._Sentinel:
                 last_cmd = 0
                 state.append(node.value)
             stack.append(iter(node.children.items()))
@@ -576,7 +573,7 @@ class _Step(Step[str, V], Generic[V]):
     @property
     def is_set(self):
         """Returns whether the node has value assigned to it."""
-        return self._node.value is not _SENTINEL
+        return self._node.value is not _SentinelClass._Sentinel
 
     @property
     def has_subtrie(self):
@@ -586,7 +583,7 @@ class _Step(Step[str, V], Generic[V]):
     def get(self, default=None):
         """Returns node's value or the default if value is not assigned."""
         v = self._node.value
-        return default if v is _SENTINEL else v
+        return default if v is _SentinelClass._Sentinel else v
 
     def set(self, value: V):
         """Deprecated.  Use ``step.value = value`` instead."""
@@ -594,7 +591,7 @@ class _Step(Step[str, V], Generic[V]):
 
     def setdefault(self, value: V) -> V:
         """Assigns value to the node if one is not set then returns it."""
-        if self._node.value is _SENTINEL:
+        if self._node.value is _SentinelClass._Sentinel:
             self._node.value = value
         return self._node.value
 
@@ -613,7 +610,7 @@ class _Step(Step[str, V], Generic[V]):
     def value(self) -> V:
         """Returns node's value or raises KeyError."""
         v = self._node.value
-        if v is _SENTINEL:
+        if v is _SentinelClass._Sentinel:
             raise ShortKeyError(self.key)
         return v
 
@@ -804,7 +801,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         return trie
 
     def _get_node(
-        self, key: str | Literal[_SENTINEL]
+        self, key: str | Literal[_SentinelClass._Sentinel]
     ) -> tuple[_Node[V], list[tuple[None, _Node[V]] | tuple[str, _Node[V]]]]:
         """Returns node for given key.  Creates it if requested.
 
@@ -848,7 +845,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         node = self._root
         for step in self.__path_from_key(key):
             node = node.children.require(node, step)
-        if node.value is _SENTINEL or not only_if_missing:
+        if node.value is _SentinelClass._Sentinel or not only_if_missing:
             node.value = value
         return node
 
@@ -865,7 +862,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         steps = iter(self.__path_from_key(key))
         node = self._root
         try:
-            while node.value is _SENTINEL:
+            while node.value is _SentinelClass._Sentinel:
                 node = node.children.require(node, next(steps))
         except StopIteration:
             node.value = True
@@ -876,7 +873,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
 
     # pylint: disable=arguments-differ
 
-    def iteritems(self, prefix: str | Literal[_SENTINEL] = _SENTINEL, shallow: bool = False) -> Generator[tuple[str, V], Any, None]:
+    def iteritems(self, prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel, shallow: bool = False) -> Generator[tuple[str, V], Any, None]:
         """Yields all nodes with associated values with given prefix.
 
         Only nodes with values are output.  For example::
@@ -921,7 +918,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         for path, value in node.iterate(list(self.__path_from_key(prefix)), shallow, self._items_callback):
             yield (self._key_from_path(path), value)
 
-    def iterkeys(self, prefix: str | Literal[_SENTINEL] = _SENTINEL, shallow: bool = False):
+    def iterkeys(self, prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel, shallow: bool = False):
         """Yields all keys having associated values with given prefix.
 
         This is equivalent to taking first element of tuples generated by
@@ -941,7 +938,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         for key, _ in self.iteritems(prefix=prefix, shallow=shallow):
             yield key
 
-    def itervalues(self, prefix: str | Literal[_SENTINEL] = _SENTINEL, shallow: bool = False):
+    def itervalues(self, prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel, shallow: bool = False):
         """Yields all values associated with keys with given prefix.
 
         This is equivalent to taking second element of tuples generated by
@@ -962,7 +959,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         for _, value in node.iterate(list(self.__path_from_key(prefix)), shallow, self._items_callback):
             yield value
 
-    def items(self, prefix: str | Literal[_SENTINEL] = _SENTINEL, shallow: bool = False):
+    def items(self, prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel, shallow: bool = False):
         """Returns a list of ``(key, value)`` pairs in given subtrie.
 
         This is equivalent to constructing a list from generator returned by
@@ -970,7 +967,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         """
         return list(self.iteritems(prefix=prefix, shallow=shallow))
 
-    def keys(self, prefix: str | Literal[_SENTINEL] = _SENTINEL, shallow: bool = False):
+    def keys(self, prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel, shallow: bool = False):
         """Returns a list of all the keys, with given prefix, in the trie.
 
         This is equivalent to constructing a list from generator returned by
@@ -978,7 +975,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         """
         return list(self.iterkeys(prefix=prefix, shallow=shallow))
 
-    def values(self, prefix: str | Literal[_SENTINEL] = _SENTINEL, shallow: bool = False):
+    def values(self, prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel, shallow: bool = False):
         """Returns a list of values in given subtrie.
 
         This is equivalent to constructing a list from generator returned by
@@ -994,7 +991,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         return sum(1 for _ in self.itervalues())
 
     def __bool__(self):
-        return self._root.value is not _SENTINEL or bool(self._root.children)
+        return self._root.value is not _SentinelClass._Sentinel or bool(self._root.children)
 
     __hash__ = None
 
@@ -1049,7 +1046,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
             node, _ = self._get_node(key)
         except KeyError:
             return 0
-        return (self.HAS_VALUE * (node.value is not _SENTINEL)) | (self.HAS_SUBTRIE * bool(node.children))
+        return (self.HAS_VALUE * (node.value is not _SentinelClass._Sentinel)) | (self.HAS_SUBTRIE * bool(node.children))
 
     def has_key(self, key: str):
         """Indicates whether given key has value associated with it.
@@ -1147,7 +1144,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         if TYPE_CHECKING:
             assert isinstance(key_or_slice, str)
         node, _ = self._get_node(key_or_slice)
-        if node.value is _SENTINEL:
+        if node.value is _SentinelClass._Sentinel:
             raise ShortKeyError(key_or_slice)
         return node.value
 
@@ -1211,15 +1208,15 @@ class Trie(MutableMapping[str, V], Generic[V]):
         i = len(trace) - 1  # len(path) >= 1 since root is always there
         _trace: list[tuple[str, _Node[V]]] = trace  # type: ignore
         step, node = _trace[i]
-        value, node.value = node.value, _SENTINEL
-        while i and node.value is _SENTINEL and not node.children:
+        value, node.value = node.value, _SentinelClass._Sentinel
+        while i and node.value is _SentinelClass._Sentinel and not node.children:
             i -= 1
             parent_step, parent = _trace[i]
             parent.children.delete(parent, step)
             step, node = parent_step, parent
         return value
 
-    def pop(self, key: str, default: V | Literal[_SENTINEL] = _SENTINEL) -> V:
+    def pop(self, key: str, default: V | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel) -> V:
         """Deletes value associated with given key and returns it.
 
         Args:
@@ -1243,17 +1240,17 @@ class Trie(MutableMapping[str, V], Generic[V]):
         try:
             _, trace = self._get_node(key)
         except KeyError:
-            if default is not _SENTINEL:
+            if default is not _SentinelClass._Sentinel:
                 return default
             raise
         value = self._pop_value(trace)
-        if value is not _SENTINEL:
+        if value is not _SentinelClass._Sentinel:
             return value
-        if default is not _SENTINEL:
+        if default is not _SentinelClass._Sentinel:
             return default
         raise ShortKeyError()
 
-    def popitem(self) -> tuple[str, V | Literal[_SENTINEL]]:
+    def popitem(self) -> tuple[str, V | Literal[_SentinelClass._Sentinel]]:
         """Deletes an arbitrary value from the trie and returns it.
 
         There is no guarantee as to which item is deleted and returned.  Neither
@@ -1269,7 +1266,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
             raise KeyError()
         node = self._root
         trace: list[tuple[None, _Node[V]] | tuple[str, _Node[V]]] = [(None, node)]
-        while node.value is _SENTINEL:
+        while node.value is _SentinelClass._Sentinel:
             step, node = node.children.pick()
             trace.append((step, node))
         _trace: list[tuple[str, _Node[V]]] = trace[1:]  # type: ignore
@@ -1314,7 +1311,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         node, trace = self._get_node(key)
         if is_slice:
             node.children = _EMPTY
-        elif node.value is _SENTINEL:
+        elif node.value is _SentinelClass._Sentinel:
             raise ShortKeyError(key)
         self._pop_value(trace)
 
@@ -1588,20 +1585,20 @@ class Trie(MutableMapping[str, V], Generic[V]):
     def __repr__(self):
         return f"{self.__class__.__name__}([{self._str_items('({k!r}: {v!r})')}])"
 
-    def __path_from_key(self, key: str | Literal[_SENTINEL]) -> Iterable[str]:
+    def __path_from_key(self, key: str | Literal[_SentinelClass._Sentinel]) -> Iterable[str]:
         """Converts a user visible key object to internal path representation.
 
         Args:
-            key: User supplied key or ``_SENTINEL``.
+            key: User supplied key or ``_SentinelClass._Sentinel``.
 
         Returns:
-            An empty tuple if ``key`` was ``_SENTINEL``, otherwise whatever
+            An empty tuple if ``key`` was ``_SentinelClass._Sentinel``, otherwise whatever
             :func:`Trie._path_from_key` returns.
 
         Raises:
             TypeError: If ``key`` is of invalid type.
         """
-        return () if key is _SENTINEL else self._path_from_key(key)
+        return () if key is _SentinelClass._Sentinel else self._path_from_key(key)
 
     def _path_from_key(self, key: str) -> Iterable[str]:
         """Converts a user visible key object to internal path representation.
@@ -1634,7 +1631,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
     def traverse(
         self,
         node_factory: NodeFactory[V],
-        prefix: str | Literal[_SENTINEL] = _SENTINEL,
+        prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel,
     ):
         """Traverses the tree using node_factory object.
 
