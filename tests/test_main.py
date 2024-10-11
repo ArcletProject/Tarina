@@ -55,20 +55,20 @@ def test_split_once():
 
     assert split_once(
         r'\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\",\\"',
-       " "
+        " ",
     ) == (
         r'\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\"\\",\\",\\"',
-        ''
+        "",
     )
 
     assert (split_once("123456789", " ", True)) == ("123456789", "")
     assert (split_once("123 456 789", " ", True)) == ("123", "456 789")
     assert (split_once('"123 456" 789', " ", True)) == ("123 456", "789")
     assert (split_once('12"3 456" 789', " ", True)) == ('12"3', '456" 789')
-    assert (split_once('12"3 456 789', " ", True)) == ('12"3', '456 789')
-    assert (split_once('"123 456 789', " ", True)) == ('"123', '456 789')
-    assert (split_once('123" 456 789', " ", True)) == ('123"', '456 789')
-    assert (split_once('"""123 456"" 789', " ", True)) == ('"""123 456""', '789')
+    assert (split_once('12"3 456 789', " ", True)) == ('12"3', "456 789")
+    assert (split_once('"123 456 789', " ", True)) == ('"123', "456 789")
+    assert (split_once('123" 456 789', " ", True)) == ('123"', "456 789")
+    assert (split_once('"""123 456"" 789', " ", True)) == ('"""123 456""', "789")
     assert (split_once('"123 "456 789', " ", True)) == ('"123', '"456 789')
 
 
@@ -86,19 +86,20 @@ def test_split():
     assert split("  ", " ") == []
 
     assert (split("123 456 789", " ", True)) == ["123", "456", "789"]
-    assert (split('123 "456 789" abc', " ", True)) == ['123', '456 789', 'abc']
-    assert (split('123 45"6 789 abc', " ", True)) == ['123', '45"6', '789', 'abc']
-    assert (split('123 456" 789 abc', " ", True)) == ['123', '456"', '789', 'abc']
-    assert (split('123 456 "789 abc', " ", True)) == ['123', '456', '"789', 'abc']
-    assert (split('123 "456 "789', " ", True)) == ['123', '"456', '"789']
-    assert (split('123 """456 7" 789', " ", True)) == ['123', '456 7', '789']
-    assert (split('123 """456 "789', " ", True)) == ['123', '"456', '"789']
+    assert (split('123 "456 789" abc', " ", True)) == ["123", "456 789", "abc"]
+    assert (split('123 45"6 789 abc', " ", True)) == ["123", '45"6', "789", "abc"]
+    assert (split('123 456" 789 abc', " ", True)) == ["123", '456"', "789", "abc"]
+    assert (split('123 456 "789 abc def', " ", True)) == ["123", "456", '"789', "abc", "def"]
+    assert (split('123 "456 "789', " ", True)) == ["123", '"456', '"789']
+    assert (split('123 """456 7" 789', " ", True)) == ["123", "456 7", "789"]
+    assert (split('123 """456 "789', " ", True)) == ["123", '"456', '"789']
 
 
 def test_lang():
     """测试 i18n"""
-    from tarina import lang
     from pathlib import Path
+
+    from tarina import lang
 
     assert lang.locales == {"zh-CN", "en-US"}
     lang.select("zh-CN")

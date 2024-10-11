@@ -16,7 +16,7 @@ def split_once(text: str, separator: str, crlf: bool = True):
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
     index, out_text, quotation, escape, sep = 0, "", "", False, False
-    text = text.lstrip(separator)
+    text = text.lstrip()
     first_quoted_sep_index = -1
     last_quote_index = 0
     tlen = len(text)
@@ -70,7 +70,7 @@ def split(text: str, separator: str, crlf: bool = True):
         List[str]: 切割后的字符串, 可能含有空格
     """
     result, quotation, escape = [], "", False
-    first_quoted_sep_index = -1
+    quoted_sep_index = []
     last_sep_index = 0
     last_quote_index = 0
     index = 0
@@ -94,8 +94,7 @@ def split(text: str, separator: str, crlf: bool = True):
                 result[-1] = char
         elif char in separator or (crlf and char in CRLF):
             if quotation:
-                if first_quoted_sep_index == -1:
-                    first_quoted_sep_index = len(result) + 1
+                quoted_sep_index.append(len(result) + 1)
                 result.append(char)
             else:
                 last_sep_index = index
@@ -106,7 +105,8 @@ def split(text: str, separator: str, crlf: bool = True):
             escape = False
     if not result:
         return []
-    if quotation and first_quoted_sep_index != -1:
+    if quotation and quoted_sep_index:
         result.insert(last_sep_index, text[last_quote_index or last_sep_index])
-        result[first_quoted_sep_index] = "\0"
-    return "".join(result).split("\0")
+        for i in quoted_sep_index:
+            result[i] = "\0"
+    return str.join("", result).split("\0")
