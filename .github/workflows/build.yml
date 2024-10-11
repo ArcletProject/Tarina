@@ -1,18 +1,15 @@
 name: Build
 
 on:
-  push:
-    tags:
-      - 'build/*'
   pull_request:
     types:
       - opened
     paths:
-      - '.github/workflows/**'
       - 'src/tarina/*_c.c'
       - 'src/tarina/*_c.pyx'
   release:
     types: [published]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
@@ -26,7 +23,7 @@ jobs:
     name: Build sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
@@ -49,7 +46,7 @@ jobs:
     name: Build pure wheel
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
@@ -84,7 +81,7 @@ jobs:
           - os: ubuntu
             qemu: s390x
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up QEMU
         if: ${{ matrix.qemu }}
         uses: docker/setup-qemu-action@v2
@@ -114,7 +111,9 @@ jobs:
           CIBW_ARCHS_MACOS: x86_64 arm64 universal2
           CIBW_ARCHS_LINUX: auto
           CIBW_ARCHS_WINDOWS: auto x86
-      - uses: actions/upload-artifact@v3
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
         with:
           path: ./wheelhouse/*.whl
 
@@ -127,7 +126,7 @@ jobs:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
