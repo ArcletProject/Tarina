@@ -122,7 +122,7 @@ jobs:
           pattern: pkg-*
           merge-multiple: true
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.5.0
+        uses: pypa/gh-action-pypi-publish@v1.10.3
         with:
           verbose: true
           user: __token__
