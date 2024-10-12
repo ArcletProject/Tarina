@@ -1,6 +1,6 @@
 [project]
 name = "tarina"
-version = "0.5.8"
+version = "0.6.0"
 description = "A collection of common utils for Arclet"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
@@ -51,3 +51,11 @@ profile = "black"
 [tool.pdm.scripts]
 test = "pytest -v -W ignore"
 make = "make"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "UP", "C", "T", "Q"]
+ignore = ["E402", "F403", "F405", "C901", "UP037"]
