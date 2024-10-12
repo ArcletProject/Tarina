@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import Any, Callable
 from collections.abc import Mapping
+from typing import Any, Callable
 
 
 @functools.lru_cache(4096)

@@ -10,7 +10,7 @@ __copyright__ = "Copyright 2014 Google Inc."
 
 import copy as _copy
 import enum
-from collections.abc import MutableMapping
+from collections.abc import Generator, Iterable, Iterator, MutableMapping
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -23,7 +23,6 @@ from typing import (
     TypeVar,
     overload,
 )
-from collections.abc import Generator, Iterable, Iterator
 
 from typing_extensions import Self
 

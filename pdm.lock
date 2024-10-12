@@ -5,7 +5,7 @@
 groups = ["default", "dev", "yaml"]
 strategy = []
 lock_version = "4.4.1"
-content_hash = "sha256:806d5db9f0ffb8a07ac307041f8b3fb5fe27f1cca4edc0002532c86510ba81d1"
+content_hash = "sha256:dfc692c04563adbc5ad9afc14de650dc2fd1dfa5d2b1d0e41e9d564568028b28"
 
 [[package]]
 name = "attrs"

@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import sys
 import types
+from collections.abc import Iterable, Mapping
 from itertools import repeat
 from types import GenericAlias
-from typing import Any, Literal, TypeVar, Union
-from collections.abc import Iterable, Mapping
+from typing import Annotated, Any, Literal, TypeVar, Union
 
-from typing import Annotated
 from typing_extensions import Literal as typing_ext_Literal
 from typing_extensions import get_args
 from typing_extensions import get_origin as typing_ext_get_origin

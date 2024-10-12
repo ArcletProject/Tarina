@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Awaitable, Coroutine
 from functools import lru_cache
 from typing import Any, Callable
-from collections.abc import Awaitable, Coroutine
 
 from typing_extensions import TypeGuard
 

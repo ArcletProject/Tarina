@@ -24,9 +24,9 @@ cdef extern from "_op.h":
 cdef dict QUOTES = {'"': '"', "'": "'"}
 cdef set CRLF = {'\r', '\n'}
 
-cpdef inline list split(str text, str separator, char crlf=True):
+cpdef inline list split(str text, str separator, bint crlf=True):
     cdef:
-        char escape = 0
+        bint escape = 0
         list result = []
         Py_UCS4 quotation = 0
         Py_UCS4 ch = 0
@@ -35,26 +35,20 @@ cpdef inline list split(str text, str separator, char crlf=True):
         list quoted_sep_index = []
         Py_ssize_t last_sep_index = 0
         Py_ssize_t last_quote_index = 0
-        Py_ssize_t offset = 1
         Py_ssize_t _len
         Py_ssize_t i = 0
 
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
         index += 1
-        if ch == 92:  # \\
-            escape = 1
-            offset += 1
-            PyList_Append(result, ch)
-        elif PyDict_Contains(QUOTES, ch):
-            if index == offset + max(last_sep_index, last_quote_index) and quotation == 0:
+        if PyDict_Contains(QUOTES, ch):
+            if index == 1 + escape + max(last_sep_index, last_quote_index) and quotation == 0:
                 quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
-            elif PyUnicode_Contains(separator, (<object>PyList_GET_ITEM(result, PyList_GET_SIZE(result)-1))) == 0 and ch == quotation:
+            elif (PyList_GET_SIZE(result) == 0 or PyUnicode_Contains(separator, (<object>PyList_GET_ITEM(result, PyList_GET_SIZE(result)-1))) == 0) and ch == quotation:
                 quotation = 0
                 last_quote_index = index
             else:
                 PyList_Append(result, ch)
-                continue
             if escape:
                 result[PyList_GET_SIZE(result)-1] = ch
         elif PyUnicode_Contains(separator, ch) or (crlf and set_contains_key(CRLF, ch)):
@@ -67,7 +61,7 @@ cpdef inline list split(str text, str separator, char crlf=True):
                     PyList_Append(result, '\1')
         else:
             PyList_Append(result, ch)
-            escape = 0
+        escape = ch == 92
     if PyList_GET_SIZE(result) == 0:
         return []
     if quotation and PyList_GET_SIZE(quoted_sep_index):
@@ -80,37 +74,27 @@ cpdef inline list split(str text, str separator, char crlf=True):
     return PyUnicode_Split(PyUnicode_Join('', result), '\1', -1)
 
 
-cpdef inline tuple split_once(str text, str separator, char crlf=True):
+cpdef inline tuple split_once(str text, str separator, bint crlf=True):
     text = text.lstrip()
     cdef:
         Py_ssize_t index = 0
         list out_text = []
         Py_UCS4 quotation = 0
         Py_UCS4 ch = 0
-        char escape = 0
-        char sep = 0
+        bint escape = 0
         Py_ssize_t length = PyUnicode_GET_LENGTH(text)
         Py_ssize_t first_quoted_sep_index = -1
         Py_ssize_t last_quote_index = 0
-        Py_ssize_t offset = 1
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
         index += 1
         if PyUnicode_Contains(separator, ch) or (crlf and set_contains_key(CRLF, ch)):
             if quotation == 0:
-                sep = 1
-                continue
-            elif first_quoted_sep_index == -1:
+                break
+            if first_quoted_sep_index == -1:
                 first_quoted_sep_index = index
-        if sep == 1:
-            index -= 1
-            break
-        if ch == 92:  # \\
-            escape = 1
-            offset += 1
-            PyList_Append(out_text, ch)
-        elif PyDict_Contains(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
-            if index == offset + last_quote_index and quotation == 0:
+        if PyDict_Contains(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
+            if index == 1 + escape + last_quote_index and quotation == 0:
                 quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
             elif PyUnicode_Contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0 and ch == quotation:
                 last_quote_index = index
@@ -118,14 +102,14 @@ cpdef inline tuple split_once(str text, str separator, char crlf=True):
                 quotation = 0
             else:
                 PyList_Append(out_text, ch)
-                continue
             if escape:
                 out_text[PyList_GET_SIZE(out_text)-1] = ch
+            escape = 0
         else:
             PyList_Append(out_text, ch)
-            escape = 0
+        escape = ch == 92
     if index == length:
         if first_quoted_sep_index == -1:
-            return text, ''
+            return PyUnicode_Join('', out_text) if last_quote_index else text, ''
         return PyUnicode_Substring(text, 0, first_quoted_sep_index-1), PyUnicode_Substring(text, first_quoted_sep_index, PY_SSIZE_T_MAX)
     return PyUnicode_Join('', out_text), PyUnicode_Substring(text, index, PY_SSIZE_T_MAX)

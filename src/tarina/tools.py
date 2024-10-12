@@ -1,15 +1,8 @@
 from __future__ import annotations
 
 import re
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Literal,
-    TypeVar,
-    overload,
-)
 from collections.abc import Awaitable, Generator, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar, overload
 
 from typing_extensions import Concatenate, ParamSpec
 

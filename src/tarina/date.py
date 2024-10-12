@@ -13,13 +13,14 @@ NUMERIC = r"\d+(?:\.\d+)?"
 TIME_REGEXP = re.compile(
     "^"
     + "".join(
-        f"(?:(?:{unit}({NUMERIC}))|(?:({NUMERIC}){unit}))?" for unit in [
-                "w(?:eek(?:s)?)?",
-                "d(?:ay(?:s)?)?",
-                "h(?:our(?:s)?)?",
-                "m(?:in(?:ute)?(?:s)?)?",
-                "s(?:ec(?:ond)?(?:s)?)?",
-            ]
+        f"(?:(?:{unit}({NUMERIC}))|(?:({NUMERIC}){unit}))?"
+        for unit in [
+            "w(?:eek(?:s)?)?",
+            "d(?:ay(?:s)?)?",
+            "h(?:our(?:s)?)?",
+            "m(?:in(?:ute)?(?:s)?)?",
+            "s(?:ec(?:ond)?(?:s)?)?",
+        ]
     )
 )
 

@@ -15,29 +15,20 @@ def split_once(text: str, separator: str, crlf: bool = True):
     Returns:
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
-    index, out_text, quotation, escape, sep = 0, "", "", False, False
+    index, out_text, quotation, escape = 0, "", "", False
     text = text.lstrip()
     first_quoted_sep_index = -1
     last_quote_index = 0
     tlen = len(text)
-    offset = 1
     for char in text:
         index += 1
         if char in separator or (crlf and char in CRLF):
             if not quotation:
-                sep = True
-                continue
-            elif first_quoted_sep_index == -1:
+                break
+            if first_quoted_sep_index == -1:
                 first_quoted_sep_index = index
-        if sep:
-            index -= 1
-            break
-        if char == "\\":
-            escape = True
-            offset += 1
-            out_text += char
-        elif char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
-            if index == offset + last_quote_index and not quotation:
+        if char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
+            if index == 1 + escape + last_quote_index and not quotation:
                 quotation = QUOTATION[char]
             elif text[index - 2] not in separator and char == quotation:
                 last_quote_index = index
@@ -45,15 +36,14 @@ def split_once(text: str, separator: str, crlf: bool = True):
                 first_quoted_sep_index = -1
             else:
                 out_text += char
-                continue
             if escape:
                 out_text = out_text[:-1] + char
         else:
             out_text += char
-            escape = False
+        escape = char == "\\"
     if index == tlen:
         if first_quoted_sep_index == -1:
-            return text, ""
+            return out_text if last_quote_index else text, ""
         return text[: first_quoted_sep_index - 1], text[first_quoted_sep_index:]
     return out_text, text[index:]
 
@@ -74,22 +64,16 @@ def split(text: str, separator: str, crlf: bool = True):
     last_sep_index = 0
     last_quote_index = 0
     index = 0
-    offset = 1
     for char in text:
         index += 1
-        if char == "\\":
-            escape = True
-            offset += 1
-            result.append(char)
-        elif char in QUOTATION:
-            if index == offset + max(last_sep_index, last_quote_index) and not quotation:
+        if char in QUOTATION:
+            if index == 1 + escape + max(last_sep_index, last_quote_index) and not quotation:
                 quotation = QUOTATION[char]
-            elif result[-1] not in separator and char == quotation:
+            elif (not result or result[-1] not in separator) and char == quotation:
                 quotation = ""
                 last_quote_index = index
             else:
                 result.append(char)
-                continue
             if escape:
                 result[-1] = char
         elif char in separator or (crlf and char in CRLF):
@@ -102,7 +86,7 @@ def split(text: str, separator: str, crlf: bool = True):
                     result.append("\0")
         else:
             result.append(char)
-            escape = False
+        escape = char == "\\"
     if not result:
         return []
     if quotation and quoted_sep_index:
