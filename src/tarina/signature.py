@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import Any, Callable, Mapping
+from typing import Any, Callable
+from collections.abc import Mapping
 
 
 @functools.lru_cache(4096)
@@ -42,7 +43,7 @@ except ImportError:
         if unwrap is not None:
             while True:
                 if hasattr(unwrap, "__wrapped__"):
-                    unwrap = unwrap.__wrapped__
+                    unwrap = unwrap.__wrapped__  # type: ignore
                     continue
                 if isinstance(unwrap, functools.partial):
                     unwrap = unwrap.func

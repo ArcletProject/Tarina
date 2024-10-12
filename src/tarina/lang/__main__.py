@@ -105,10 +105,10 @@ LANG_TEMPLATE_YAML = """\
 def new(*_):
     i18n_dir = Path.cwd() / "i18n"
     if i18n_dir.exists():
-        print("i18n directory already exists")
+        print("i18n directory already exists")  # noqa: T201
         return
     i18n_dir.mkdir()
-    print(f"i18n directory created: {i18n_dir}")
+    print(f"i18n directory created: {i18n_dir}")  # noqa: T201
 
 
 def init(*_):
@@ -130,7 +130,7 @@ def init(*_):
     with template_schema.open("w+") as f:
         f.write(TEMPLATE_SCHEMA)
 
-    print(
+    print(  # noqa: T201
         f"""\
 files created:
 - {config_file}
@@ -145,7 +145,7 @@ def default(args):
     root = Path.cwd()
     config_file = root / ".config.json"
     if not config_file.exists():
-        print("config file not found")
+        print("config file not found")  # noqa: T201
         return
 
     with config_file.open("r") as f:
@@ -155,9 +155,9 @@ def default(args):
         config["default"] = args.locale
         with config_file.open("w") as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
-        print(f"default lang scope set to: {args.locale}")
+        print(f"default lang scope set to: {args.locale}")  # noqa: T201
     else:
-        print(f"default lang scope: {config['default']}")
+        print(f"default lang scope: {config['default']}")  # noqa: T201
 
 
 def schema(*_):
@@ -170,9 +170,9 @@ def schema(*_):
     try:
         write_lang_schema(Path.cwd())
     except Exception as e:
-        print(repr(e))
+        print(repr(e))  # noqa: T201
     else:
-        print(
+        print(  # noqa: T201
             f"schema for lang file {'created' if created else 'updated'}. Now you can create or update your lang files."
         )
 
@@ -190,9 +190,9 @@ def model(*_):
             with init_file.open("a") as f:
                 f.write("\nfrom .model import Lang as Lang\n")
     except Exception as e:
-        print(repr(e))
+        print(repr(e))  # noqa: T201
     else:
-        print(
+        print(  # noqa: T201
             f"model for lang file {'created' if created else 'updated'}. Now you can create or update your lang files."
         )
 
@@ -210,7 +210,7 @@ def create(args):
         with lang_file.open("w+") as f:
             f.write(LANG_TEMPLATE_JSON)
 
-    print(f"lang file created: {lang_file}")
+    print(f"lang file created: {lang_file}")  # noqa: T201
 
 
 def delete(args):
@@ -219,9 +219,9 @@ def delete(args):
 
     if lang_file.exists():
         lang_file.unlink()
-        print(f"lang file deleted: {lang_file}")
+        print(f"lang file deleted: {lang_file}")  # noqa: T201
     else:
-        print(f"lang file not found: {lang_file}")
+        print(f"lang file not found: {lang_file}")  # noqa: T201
 
 
 def main():

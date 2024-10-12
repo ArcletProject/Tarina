@@ -4,11 +4,13 @@ import sys
 import types
 from itertools import repeat
 from types import GenericAlias
-from typing import Any, Literal, TypeVar, Union, Mapping, Iterable
+from typing import Any, Literal, TypeVar, Union
+from collections.abc import Iterable, Mapping
 
-from typing_extensions import Annotated, get_args
-from typing_extensions import get_origin as typing_ext_get_origin
+from typing import Annotated
 from typing_extensions import Literal as typing_ext_Literal
+from typing_extensions import get_args
+from typing_extensions import get_origin as typing_ext_get_origin
 
 Unions = (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
 
@@ -65,15 +67,11 @@ def generic_isinstance(obj: Any, par: Any) -> bool:
                 if _origin is tuple:
                     if len(args) == 2 and args[1] is Ellipsis:
                         return all(map(generic_isinstance, obj, repeat(args[0])))
-                    return len(args) == len(obj) and all(
-                        map(generic_isinstance, obj, args)
-                    )
+                    return len(args) == len(obj) and all(map(generic_isinstance, obj, args))
                 elif len(args) == 1 and isinstance(obj, Iterable):
                     return all(map(generic_isinstance, obj, repeat(args[0])))
                 elif len(args) == 2 and isinstance(obj, Mapping):
-                    return all(
-                        map(generic_isinstance, obj.keys(), repeat(args[0]))
-                    ) and all(
+                    return all(map(generic_isinstance, obj.keys(), repeat(args[0]))) and all(
                         map(generic_isinstance, obj.values(), repeat(args[1]))
                     )
             return True
@@ -134,6 +132,4 @@ def generic_issubclass(scls: Any, cls: Any) -> Any:
     if not cls_args:
         return True
 
-    return len(scls_args) == len(cls_args) and all(
-        map(generic_issubclass, scls_args, cls_args)
-    )
+    return len(scls_args) == len(cls_args) and all(map(generic_issubclass, scls_args, cls_args))

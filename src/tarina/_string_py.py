@@ -39,7 +39,7 @@ def split_once(text: str, separator: str, crlf: bool = True):
         elif char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
             if index == offset + last_quote_index and not quotation:
                 quotation = QUOTATION[char]
-            elif not text[index - 2] in separator and char == quotation:
+            elif text[index - 2] not in separator and char == quotation:
                 last_quote_index = index
                 quotation = ""
                 first_quoted_sep_index = -1
@@ -84,7 +84,7 @@ def split(text: str, separator: str, crlf: bool = True):
         elif char in QUOTATION:
             if index == offset + max(last_sep_index, last_quote_index) and not quotation:
                 quotation = QUOTATION[char]
-            elif not result[-1] in separator and char == quotation:
+            elif result[-1] not in separator and char == quotation:
                 quotation = ""
                 last_quote_index = index
             else:

@@ -1,4 +1,5 @@
-from typing import Any, Callable, Generic, Hashable, Iterable, TypeVar, overload
+from typing import Any, Callable, Generic, TypeVar, overload
+from collections.abc import Hashable, Iterable
 
 _KT = TypeVar("_KT", bound=Hashable)
 _VT = TypeVar("_VT")

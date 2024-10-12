@@ -1,5 +1,5 @@
 """
-Trie data structure implementation, modified from github.com/google/pygtrie
+Trie data structure implementation, modified from github.com/google/tarina.trie
 """
 
 from __future__ import annotations
@@ -16,17 +16,14 @@ from typing import (
     Any,
     Callable,
     Final,
-    Generator,
     Generic,
-    Iterable,
-    Iterator,
     Literal,
     Optional,
     Protocol,
-    Tuple,
     TypeVar,
     overload,
 )
+from collections.abc import Generator, Iterable, Iterator
 
 from typing_extensions import Self
 
@@ -238,13 +235,13 @@ class _SentinelClass(enum.Enum):
     _Sentinel = object()
 
 
-T_Iteritems = Callable[[Children[T]], Iterable[Tuple[str, "_Node[T]"]]]
+T_Iteritems = Callable[[Children[T]], Iterable[tuple[str, "_Node[T]"]]]
 
-PathConv = Callable[[Tuple[str, ...]], str]
+PathConv = Callable[[tuple[str, ...]], str]
 NodeFactory = Callable[
     [
-        Callable[[Tuple[str, ...]], str],
-        Tuple[str, ...],
+        Callable[[tuple[str, ...]], str],
+        tuple[str, ...],
         Generator["_Node[T]", None, None],
         Optional[T],
     ],
@@ -512,6 +509,7 @@ class Step(Protocol[_KT, _VT]):
     def get(self) -> _VT | None: ...
     @overload
     def get(self, default: _VT) -> _VT: ...
+    def get(self, default: _VT | None = None) -> _VT | None: ...
 
     def set(self, value: _VT) -> None: ...
 
@@ -549,8 +547,10 @@ class _NoneStep(Step[None, None]):
     def setdefault(self, value):
         return value
 
-    is_set = has_subtrie = property(__bool__)
-    key = value = property(lambda self: None)
+    is_set = property(__bool__)  # type: ignore
+    key = property(lambda self: None)  # type: ignore
+    has_subtrie = property(__bool__)  # type: ignore
+    value = property(lambda self: None)  # type: ignore
 
     def __repr__(self):
         return "(None Step)"
@@ -580,7 +580,7 @@ class _Step(Step[str, V], Generic[V]):
         """Returns whether the node has any children."""
         return bool(self._node.children)
 
-    def get(self, default=None):
+    def get(self, default: V | None = None):  # type: ignore
         """Returns node's value or the default if value is not assigned."""
         v = self._node.value
         return default if v is _SentinelClass._Sentinel else v
@@ -622,17 +622,17 @@ class _Step(Step[str, V], Generic[V]):
 _NONE_STEP: Final[_NoneStep] = _NoneStep()
 
 
-class Trie(MutableMapping[str, V], Generic[V]):
+class Trie(Generic[V]):
     """A trie implementation with dict interface plus some extensions.
 
-    Keys used with the :class:`pygtrie.Trie` class must be iterable which each
+    Keys used with the :class:`tarina.trie.Trie` class must be iterable which each
     component being a hashable objects.  In other words, for a given key,
     ``dict.fromkeys(key)`` must be valid expression.
 
     In particular, strings work well as trie keys, however when getting them
     back (for example via :func:`Trie.iterkeys` method), instead of strings,
     tuples of characters are produced.  For that reason,
-    :class:`pygtrie.CharTrie` or :class:`pygtrie.StringTrie` classes may be
+    :class:`tarina.trie.CharTrie` or :class:`tarina.trie.StringTrie` classes may be
     preferred when using string keys.
     """
 
@@ -661,7 +661,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
 
         Normally, child nodes are not sorted when iterating or traversing over
         the trie (just like dict elements are not sorted).  This method allows
-        sorting to be enabled (which was the behaviour prior to pygtrie 2.0
+        sorting to be enabled (which was the behaviour prior to tarina.trie 2.0
         release).
 
         For Trie class, enabling sorting of children is identical to simply
@@ -704,10 +704,10 @@ class Trie(MutableMapping[str, V], Generic[V]):
     ):
         """Updates stored values.  Works like :meth:`dict.update`."""
         if other and isinstance(other, MutableMapping):
-            for key, value in _iteritems(other):  # type: ignore
+            for key, value in self.iteritems(other):  # type: ignore
                 self[key] = value
             other = ()
-        super().update(other or (), **kwargs)  # type: ignore
+        MutableMapping.update(self, other or (), **kwargs)  # type: ignore
 
     def merge(self, other: Trie[V], overwrite: bool = False):
         """Moves nodes from other trie into this one.
@@ -718,24 +718,24 @@ class Trie(MutableMapping[str, V], Generic[V]):
 
         The merging may happen between different types of tries resulting in
         different (key, value) pairs in the destination trie compared to the
-        source.  For example, merging two :class:`pygtrie.StringTrie` objects
+        source.  For example, merging two :class:`tarina.trie.StringTrie` objects
         each using different separators will work as if the other trie had
-        separator of this trie.  Similarly, a :class:`pygtrie.CharTrie` may be
-        merged into a :class:`pygtrie.StringTrie` but when keys are read those
+        separator of this trie.  Similarly, a :class:`tarina.trie.CharTrie` may be
+        merged into a :class:`tarina.trie.StringTrie` but when keys are read those
         will be joined by the separator.  For example:
 
-            >>> import pygtrie
-            >>> st = pygtrie.StringTrie(separator='.')
-            >>> st.merge(pygtrie.StringTrie({'foo/bar': 42}))
+            >>> import tarina.trie
+            >>> st = tarina.trie.StringTrie(separator='.')
+            >>> st.merge(tarina.trie.StringTrie({'foo/bar': 42}))
             >>> list(st.items())
             [('foo.bar', 42)]
-            >>> st.merge(pygtrie.CharTrie({'baz': 24}))
+            >>> st.merge(tarina.trie.CharTrie({'baz': 24}))
             >>> sorted(st.items())
             [('b.a.z', 24), ('foo.bar', 42)]
 
         Not all tries can be merged into other tries.  For example,
-        a :class:`pygtrie.StringTrie` may not be merged into
-        a :class:`pygtrie.CharTrie` because the latter imposes a requirement for
+        a :class:`tarina.trie.StringTrie` may not be merged into
+        a :class:`tarina.trie.CharTrie` because the latter imposes a requirement for
         each component in the key to be exactly one character while in the
         former components may be arbitrary length.
 
@@ -880,8 +880,8 @@ class Trie(MutableMapping[str, V], Generic[V]):
 
         Only nodes with values are output.  For example::
 
-            >>> import pygtrie
-            >>> t = pygtrie.StringTrie()
+            >>> import tarina.trie
+            >>> t = tarina.trie.StringTrie()
             >>> t['foo'] = 'Foo'
             >>> t['foo/bar/baz'] = 'Baz'
             >>> t['qux'] = 'Qux'
@@ -999,7 +999,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
     def __bool__(self):
         return self._root.value is not _SentinelClass._Sentinel or bool(self._root.children)
 
-    __hash__ = None
+    __hash__ = None  # type: ignore
 
     HAS_VALUE = 1
     HAS_SUBTRIE = 2
@@ -1013,18 +1013,18 @@ class Trie(MutableMapping[str, V], Generic[V]):
         independent of each other and all of the four combinations are possible.
         For example::
 
-            >>> import pygtrie
-            >>> t = pygtrie.StringTrie()
+            >>> import tarina.trie
+            >>> t = tarina.trie.StringTrie()
             >>> t['foo/bar'] = 'Bar'
             >>> t['foo/bar/baz'] = 'Baz'
             >>> t.has_node('qux') == 0
             True
-            >>> t.has_node('foo/bar/baz') == pygtrie.Trie.HAS_VALUE
+            >>> t.has_node('foo/bar/baz') == tarina.trie.Trie.HAS_VALUE
             True
-            >>> t.has_node('foo') == pygtrie.Trie.HAS_SUBTRIE
+            >>> t.has_node('foo') == tarina.trie.Trie.HAS_SUBTRIE
             True
-            >>> t.has_node('foo/bar') == (pygtrie.Trie.HAS_VALUE |
-            ...                           pygtrie.Trie.HAS_SUBTRIE)
+            >>> t.has_node('foo/bar') == (tarina.trie.Trie.HAS_VALUE |
+            ...                           tarina.trie.Trie.HAS_SUBTRIE)
             True
 
         There are two higher level methods built on top of this one which give
@@ -1116,8 +1116,8 @@ class Trie(MutableMapping[str, V], Generic[V]):
 
         Example:
 
-            >>> import pygtrie
-            >>> t = pygtrie.StringTrie()
+            >>> import tarina.trie
+            >>> t = tarina.trie.StringTrie()
             >>> t['foo/bar'] = 'Bar'
             >>> t['foo/baz'] = 'Baz'
             >>> t['qux'] = 'Qux'
@@ -1163,8 +1163,8 @@ class Trie(MutableMapping[str, V], Generic[V]):
         is a slice (which must have `start` set only), it in addition clears any
         subtrie that might have been attached to particular key.  For example::
 
-            >>> import pygtrie
-            >>> t = pygtrie.StringTrie()
+            >>> import tarina.trie
+            >>> t = tarina.trie.StringTrie()
             >>> t['foo/bar'] = 'Bar'
             >>> t['foo/baz'] = 'Baz'
             >>> sorted(t.keys())
@@ -1289,8 +1289,8 @@ class Trie(MutableMapping[str, V], Generic[V]):
         if the argument is a slice (in which case it must have only start set),
         the whole subtrie is removed.  For example::
 
-            >>> import pygtrie
-            >>> t = pygtrie.StringTrie()
+            >>> import tarina.trie
+            >>> t = tarina.trie.StringTrie()
             >>> t['foo'] = 'Foo'
             >>> t['foo/bar'] = 'Bar'
             >>> t['foo/bar/baz'] = 'Baz'
@@ -1330,7 +1330,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
             key: Key of the node to look for.
 
         Yields:
-            :class:`pygtrie.Trie._Step` objects which can be used to extract or
+            :class:`tarina.trie.Trie._Step` objects which can be used to extract or
             set node's value as well as get node's key.
 
             When representing nodes with assigned values, the objects can be
@@ -1364,8 +1364,8 @@ class Trie(MutableMapping[str, V], Generic[V]):
 
         Example:
 
-            >>> import pygtrie
-            >>> t = pygtrie.StringTrie()
+            >>> import tarina.trie
+            >>> t = tarina.trie.StringTrie()
             >>> t['foo'] = 'Foo'
             >>> t['foo/bar/baz'] = 'Baz'
             >>> list(t.prefixes('foo/bar/baz/qux'))
@@ -1377,7 +1377,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
             key: Key to look for.
 
         Yields:
-            :class:`pygtrie.Trie._Step` objects which can be used to extract or
+            :class:`tarina.trie.Trie._Step` objects which can be used to extract or
             set node's value as well as get node's key.
 
             The objects can be treated as ``(k, value)`` pairs denoting keys
@@ -1401,8 +1401,8 @@ class Trie(MutableMapping[str, V], Generic[V]):
 
         Example:
 
-            >>> import pygtrie
-            >>> t = pygtrie.StringTrie()
+            >>> import tarina.trie
+            >>> t = tarina.trie.StringTrie()
             >>> t['foo'] = 'Foo'
             >>> t['foo/bar/baz'] = 'Baz'
             >>> t.shortest_prefix('foo/bar/baz/qux')
@@ -1420,9 +1420,9 @@ class Trie(MutableMapping[str, V], Generic[V]):
             key: Key to look for.
 
         Returns:
-            :class:`pygtrie.Trie._Step` object (which can be used to extract or
+            :class:`tarina.trie.Trie._Step` object (which can be used to extract or
             set node's value as well as get node's key), or
-            a :class:`pygtrie.Trie._NoneStep` object (which is falsy value
+            a :class:`tarina.trie.Trie._NoneStep` object (which is falsy value
             simulating a _Step with ``None`` key and value) if no prefix is
             found.
 
@@ -1441,8 +1441,8 @@ class Trie(MutableMapping[str, V], Generic[V]):
 
         Example:
 
-            >>> import pygtrie
-            >>> t = pygtrie.StringTrie()
+            >>> import tarina.trie
+            >>> t = tarina.trie.StringTrie()
             >>> t['foo'] = 'Foo'
             >>> t['foo/bar/baz'] = 'Baz'
             >>> t.longest_prefix('foo/bar/baz/qux')
@@ -1460,9 +1460,9 @@ class Trie(MutableMapping[str, V], Generic[V]):
             key: Key to look for.
 
         Returns:
-            :class:`pygtrie.Trie._Step` object (which can be used to extract or
+            :class:`tarina.trie.Trie._Step` object (which can be used to extract or
             set node's value as well as get node's key), or
-            a :class:`pygtrie.Trie._NoneStep` object (which is falsy value
+            a :class:`tarina.trie.Trie._NoneStep` object (which is falsy value
             simulating a _Step with ``None`` key and value) if no prefix is
             found.
 
@@ -1482,11 +1482,11 @@ class Trie(MutableMapping[str, V], Generic[V]):
         It not only requires for keys and values to be equal but also for the
         two tries to be of the same type and have the same structure.
 
-        For example, for two :class:`pygtrie.StringTrie` objects to be equal,
+        For example, for two :class:`tarina.trie.StringTrie` objects to be equal,
         they need to have the same structure as well as the same separator as
         seen below:
 
-            >>> import pygtrie
+            >>> import tarina.trie
             >>> t0 = StringTrie({'foo/bar': 42}, separator='/')
             >>> t1 = StringTrie({'foo.bar': 42}, separator='.')
             >>> t0.strictly_equals(t1)
@@ -1507,7 +1507,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         """
         if self is other:
             return True
-        if type(self) != type(other):
+        if type(self) is not type(other):
             return False
         result = self._eq_impl(other)
         if result is NotImplemented:
@@ -1522,7 +1522,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         What matters is whether keys and values in both mappings are the same.
         This may lead to unexpected results, for example:
 
-            >>> import pygtrie
+            >>> import tarina.trie
             >>> t0 = StringTrie({'foo/bar': 42}, separator='/')
             >>> t1 = StringTrie({'foo.bar': 42}, separator='.')
             >>> t0 == t1
@@ -1572,7 +1572,7 @@ class Trie(MutableMapping[str, V], Generic[V]):
         """
         if self is other:
             return True
-        if type(other) == type(self):
+        if type(other) is type(self):
             result = self._eq_impl(other)
             if result is not NotImplemented:
                 return result
@@ -1683,9 +1683,9 @@ class Trie(MutableMapping[str, V], Generic[V]):
         directories (i.e. those whose names start with a dot)::
 
             import os
-            import pygtrie
+            import tarina.trie
 
-            t = pygtrie.StringTrie(separator=os.sep)
+            t = tarina.trie.StringTrie(separator=os.sep)
 
             # Construct a trie with all files in current directory and all
             # of its sub-directories.  Files get set a True value.
@@ -1715,9 +1715,9 @@ class Trie(MutableMapping[str, V], Generic[V]):
         files and directories are ignored::
 
             import os
-            import pygtrie
+            import tarina.trie
 
-            t = pygtrie.StringTrie(separator=os.sep)
+            t = tarina.trie.StringTrie(separator=os.sep)
             for root, _, files in os.walk('.'):
                 for name in files: t[os.path.join(root, name)] = True
 
@@ -1793,22 +1793,22 @@ class Trie(MutableMapping[str, V], Generic[V]):
             self._items_callback,
         )
 
-    traverse.uses_bool_convertible_children = True
+    # traverse.uses_bool_convertible_children = True
 
 
 class CharTrie(Trie[V]):
-    """A variant of a :class:`pygtrie.Trie` which accepts strings as keys.
+    """A variant of a :class:`tarina.trie.Trie` which accepts strings as keys.
 
-    The only difference between :class:`pygtrie.CharTrie` and
-    :class:`pygtrie.Trie` is that when :class:`pygtrie.CharTrie` returns keys
+    The only difference between :class:`tarina.trie.CharTrie` and
+    :class:`tarina.trie.Trie` is that when :class:`tarina.trie.CharTrie` returns keys
     back to the client (for instance when :func:`Trie.keys` method is called),
     those keys are returned as strings.
 
     Common example where this class can be used is a dictionary of words in
     a natural language.  For example::
 
-        >>> import pygtrie
-        >>> t = pygtrie.CharTrie()
+        >>> import tarina.trie
+        >>> t = tarina.trie.CharTrie()
         >>> t['wombat'] = True
         >>> t['woman'] = True
         >>> t['man'] = True
@@ -1828,7 +1828,7 @@ class CharTrie(Trie[V]):
 
 
 class StringTrie(Trie[V]):
-    """:class:`pygtrie.Trie` variant accepting strings with a separator as keys.
+    """:class:`tarina.trie.Trie` variant accepting strings with a separator as keys.
 
     The trie accepts strings as keys which are split into components using
     a separator specified during initialisation (forward slash, i.e. ``/``, by
@@ -1837,13 +1837,13 @@ class StringTrie(Trie[V]):
     Common example where this class can be used is when keys are paths.  For
     example, it could map from a path to a request handler::
 
-        import pygtrie
+        import tarina.trie
 
         def handle_root(): pass
         def handle_admin(): pass
         def handle_admin_images(): pass
 
-        handlers = pygtrie.StringTrie()
+        handlers = tarina.trie.StringTrie()
         handlers[''] = handle_root
         handlers['/admin'] = handle_admin
         handlers['/admin/images'] = handle_admin_images
@@ -1939,11 +1939,11 @@ if __name__ == "__main__":
     b = list(trie.prefixes("foo"))
     c = trie["ba":]
 
-    print(a, b, list(c))
+    print(a, b, list(c))  # noqa: T201
 
     trie1 = StringTrie[str](separator=".")
     trie1["foo.bar"] = "FooBar"
     trie1["foo.baz"] = "FooBaz"
     trie1["foo.abc.def"] = "FooAbcDef"
 
-    print(trie1.has_subtrie("foo"))
+    print(trie1.has_subtrie("foo"))  # noqa: T201

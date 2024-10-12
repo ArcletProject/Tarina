@@ -43,7 +43,7 @@ def generate_lang_schema(root: Path):
     scopes: list[_TemplateDict] = template["scopes"]
     return {
         "title": "Lang Schema",
-        "description": f"Schema for lang file",
+        "description": "Schema for lang file",
         "type": "object",
         "properties": {s["scope"]: schema_scope(s["scope"], s["types"]) for s in scopes},
     }
@@ -51,5 +51,5 @@ def generate_lang_schema(root: Path):
 
 def write_lang_schema(root: Path):
     schema = generate_lang_schema(root)
-    with (root / f".lang.schema.json").open("w", encoding="utf-8") as f:
+    with (root / ".lang.schema.json").open("w", encoding="utf-8") as f:
         json.dump(schema, f, ensure_ascii=False, indent=2)

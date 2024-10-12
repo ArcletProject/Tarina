@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import contextlib
+import inspect
 import json
 import locale
 import os
 import sys
 from dataclasses import dataclass, field
-import inspect
 from pathlib import Path
-from typing import Dict, Final, Union, final, Callable
+from typing import Callable, Final, Union, final
 
 from typing_extensions import Self
 
@@ -51,7 +51,7 @@ def _get_win_locale_from_registry() -> str | None:
 
 if WINDOWS:
     try:
-        import ctypes
+        import ctypes  # noqa: F401
 
         _get_win_locale = _get_win_locale_with_ctypes
     except ImportError:
@@ -77,8 +77,8 @@ def _get_config(root: Path) -> _LangConfigData:
         return _LangConfigData(**data)
 
 
-Types = Union[str, Dict[str, "Types"]]
-Raw = Dict[str, Dict[str, Types]]
+Types = Union[str, dict[str, "Types"]]
+Raw = dict[str, dict[str, Types]]
 
 
 def convert_dictionary(data, prefix: str = ""):
@@ -172,7 +172,7 @@ class _LangConfig:
 
     @property
     def locales(self):
-        return set(sorted(self.__locales))
+        return set(sorted(self.__locales))  # noqa: C414
 
     def locales_in(self, config_name: str):
         return self.__configs[config_name].locales

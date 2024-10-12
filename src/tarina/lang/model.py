@@ -90,5 +90,5 @@ def generate_model(root: Path):
 
 def write_model(root: Path):
     model = generate_model(root)
-    with (root / f"model.py").open("w", encoding="utf-8") as f:
+    with (root / "model.py").open("w", encoding="utf-8") as f:
         f.write(model)

@@ -4,15 +4,12 @@ import re
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    Generator,
-    Iterable,
     Literal,
     TypeVar,
     overload,
 )
+from collections.abc import Awaitable, Generator, Iterable
 
 from typing_extensions import Concatenate, ParamSpec
 
@@ -52,6 +49,7 @@ def gen_subclass(cls: type[T]) -> Generator[type[T], None, None]:
 
 R = TypeVar("R")
 P = ParamSpec("P")
+C = TypeVar("C")
 
 
 @overload
@@ -61,13 +59,13 @@ def init_spec(fn: Callable[P, T]) -> Callable[[Callable[[T], R]], Callable[P, R]
 @overload
 def init_spec(
     fn: Callable[P, T], is_method: Literal[True]
-) -> Callable[[Callable[[Any, T], R]], Callable[Concatenate[Any, P], R]]: ...
+) -> Callable[[Callable[[C, T], R]], Callable[Concatenate[C, P], R]]: ...
 
 
 def init_spec(  # type: ignore
     fn: Callable[P, T], is_method: bool = False
-) -> Callable[[Callable[[T], R] | Callable[[Any, T], R]], Callable[P, R] | Callable[Concatenate[Any, P], R]]:
-    def wrapper(func: Callable[[T], R] | Callable[[Any, T], R]) -> Callable[P, R] | Callable[Concatenate[Any, P], R]:
+) -> Callable[[Callable[[T], R] | Callable[[C, T], R]], Callable[P, R] | Callable[Concatenate[C, P], R]]:
+    def wrapper(func: Callable[[T], R] | Callable[[C, T], R]) -> Callable[P, R] | Callable[Concatenate[C, P], R]:
         def inner(*args: P.args, **kwargs: P.kwargs):
             if is_method:
                 return func(args[0], fn(*args[1:], **kwargs))  # type: ignore
@@ -78,7 +76,7 @@ def init_spec(  # type: ignore
     return wrapper
 
 
-def safe_eval(route: str, _locals: Dict[str, Any]):
+def safe_eval(route: str, _locals: dict[str, Any]):
     parts = re.split(r"\.|(\[.+?\])|(\(.*?\))", route)
     if (key := parts[0]) not in _locals:
         raise NameError(key)
