@@ -3,16 +3,12 @@ from __future__ import annotations
 import sys
 import types
 from itertools import repeat
-from typing import TYPE_CHECKING, Any, List, Literal, TypeVar, Union, Mapping, Iterable
+from types import GenericAlias
+from typing import Any, Literal, TypeVar, Union, Mapping, Iterable
 
 from typing_extensions import Annotated, get_args
 from typing_extensions import get_origin as typing_ext_get_origin
 from typing_extensions import Literal as typing_ext_Literal
-
-if TYPE_CHECKING:
-    from types import GenericAlias  # noqa
-else:
-    GenericAlias: type = type(List[int])
 
 Unions = (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
 
@@ -30,6 +26,10 @@ def get_origin(obj: Any) -> Any:
     return typing_ext_get_origin(obj) or obj
 
 
+def isclass(cls: Any) -> bool:
+    return isinstance(cls, type) and not isinstance(cls, GenericAlias)
+
+
 def generic_isinstance(obj: Any, par: Any) -> bool:
     """检查 obj 是否是 args 中的一个类型, 支持泛型, Any, Union
     Args:
@@ -42,7 +42,7 @@ def generic_isinstance(obj: Any, par: Any) -> bool:
         return True
     _origin = get_origin(par)
     try:
-        if isinstance(par, type):
+        if isclass(par):
             return isinstance(obj, par)
         if _origin is Annotated:
             return generic_isinstance(obj, get_args(par)[0])
@@ -96,7 +96,7 @@ def generic_issubclass(scls: Any, cls: Any) -> Any:
     if scls is Any:
         return cls
 
-    if isinstance(scls, type) and (isinstance(cls, type) or isinstance(cls, tuple)):
+    if isclass(scls) and (isclass(cls) or isinstance(cls, tuple)):
         return issubclass(scls, cls)
 
     scls_origin, scls_args = get_origin(scls) or scls, get_args(scls)
