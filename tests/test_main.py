@@ -11,12 +11,34 @@ def test_generic_isinstance():
     assert generic_isinstance(1, Union[str, int])
     assert generic_isinstance(123, Literal[123])
     assert generic_isinstance([1], List[int])
+    assert generic_isinstance([1], list[int])
     assert generic_isinstance(1, Annotated[int, lambda x: x > 0])
     assert generic_isinstance("a", S)
     assert generic_isinstance(1, (int, str))
     assert generic_isinstance("a", (int, str))
+    assert generic_isinstance((1, "a"), tuple[int, str])
+    assert generic_isinstance((1, 2, 3), tuple[int, ...])
     assert not generic_isinstance(bool, (str, list))
     assert not generic_isinstance({123}, Dict[str, str])
+    assert not generic_isinstance([1], List[str])
+    assert not generic_isinstance({"a": 1}, dict[str, str])
+    assert not generic_isinstance((1, 2), tuple[int, str])
+    assert not generic_isinstance((1, "a"), tuple[int, str, str])
+
+
+def test_generic_issubclass():
+    from typing import Any, Dict, List, Literal, TypeVar, Union
+
+    from typing_extensions import Annotated
+
+    from tarina import generic_issubclass
+
+    S = TypeVar("S", bound=str)
+    assert generic_issubclass(str, Any)
+    assert generic_issubclass(int, Union[str, int])
+    assert generic_issubclass(List[int], List[int])
+    assert generic_issubclass(int, Annotated[int, lambda x: x > 0])
+    assert generic_issubclass(str, S)
 
 
 def test_lru():

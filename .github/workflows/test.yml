@@ -5,6 +5,7 @@ on:
       - main
     paths-ignore:
       - '.github/workflows/build.yml'
+      - '.github/workflows/auto-merge.yml'
   pull_request:
 
 jobs:

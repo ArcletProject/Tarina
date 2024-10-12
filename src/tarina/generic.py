@@ -2,29 +2,39 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import TYPE_CHECKING, Any, List, Literal, TypeVar, Union
+from itertools import repeat
+from typing import TYPE_CHECKING, Any, List, Literal, TypeVar, Union, Mapping, Iterable
 
 from typing_extensions import Annotated, get_args
 from typing_extensions import get_origin as typing_ext_get_origin
+from typing_extensions import Literal as typing_ext_Literal
 
 if TYPE_CHECKING:
     from types import GenericAlias  # noqa
 else:
     GenericAlias: type = type(List[int])
 
-AnnotatedType: type = type(Annotated[int, lambda x: x > 0])
 Unions = (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
+
+
+def origin_is_union(origin: type | None) -> bool:
+    return any(origin is u for u in Unions)
+
+
+def origin_is_literal(origin: type | None) -> bool:
+    """判断是否是 Literal 类型"""
+    return origin is Literal or origin is typing_ext_Literal
 
 
 def get_origin(obj: Any) -> Any:
     return typing_ext_get_origin(obj) or obj
 
 
-def generic_isinstance(obj: Any, par: type | Any | tuple[type, ...]) -> bool:
+def generic_isinstance(obj: Any, par: Any) -> bool:
     """检查 obj 是否是 args 中的一个类型, 支持泛型, Any, Union
     Args:
         obj (Any): 要检查的对象
-        par (Union[type, Any, Tuple[type, ...]]): 要检查的对象的类型
+        par (Any): 要检查的对象的类型
     Returns:
         bool: 是否是类型
     """
@@ -34,8 +44,7 @@ def generic_isinstance(obj: Any, par: type | Any | tuple[type, ...]) -> bool:
     try:
         if isinstance(par, type):
             return isinstance(obj, par)
-
-        if par.__class__ is AnnotatedType:
+        if _origin is Annotated:
             return generic_isinstance(obj, get_args(par)[0])
         if _origin is Literal:
             return obj in get_args(par)
@@ -52,43 +61,79 @@ def generic_isinstance(obj: Any, par: type | Any | tuple[type, ...]) -> bool:
                 return any(generic_isinstance(obj, p) for p in par.__constraints__)
             return generic_isinstance(obj, par.__bound__) if par.__bound__ else True
         if isinstance(obj, _origin):  # type: ignore
+            if args := get_args(par):
+                if _origin is tuple:
+                    if len(args) == 2 and args[1] is Ellipsis:
+                        return all(map(generic_isinstance, obj, repeat(args[0])))
+                    return len(args) == len(obj) and all(
+                        map(generic_isinstance, obj, args)
+                    )
+                elif len(args) == 1 and isinstance(obj, Iterable):
+                    return all(map(generic_isinstance, obj, repeat(args[0])))
+                elif len(args) == 2 and isinstance(obj, Mapping):
+                    return all(
+                        map(generic_isinstance, obj.keys(), repeat(args[0]))
+                    ) and all(
+                        map(generic_isinstance, obj.values(), repeat(args[1]))
+                    )
             return True
     except TypeError:
         return False
     return False
 
 
-def generic_issubclass(cls: type, par: Union[type, Any, tuple[type, ...]]) -> bool:
-    """检查 cls 是否是 args 中的一个子类, 支持泛型, Any, Union
+def generic_issubclass(scls: Any, cls: Any) -> Any:
+    """检查 scls 是否是 cls 中的一个子类, 支持泛型, Any, Union
     Args:
-        cls (type): 要检查的类
-        par (Union[type, Any, Tuple[type, ...]]): 要检查的类的父类
+        scls (Any): 要检查的类
+        cls (Any): 要检查的类的父类
     Returns:
         bool: 是否是父类
     """
-    if par is Any:
+    if cls is Any:
         return True
-    _origin = get_origin(par)
+
+    if scls is Any:
+        return cls
+
+    if isinstance(scls, type) and (isinstance(cls, type) or isinstance(cls, tuple)):
+        return issubclass(scls, cls)
+
+    scls_origin, scls_args = get_origin(scls) or scls, get_args(scls)
+    cls_origin, cls_args = get_origin(cls) or cls, get_args(cls)
+
+    if scls_origin is tuple and cls_origin is tuple:
+        if len(scls_args) == 2 and scls_args[1] is Ellipsis:
+            return generic_issubclass(scls_args[0], cls_args)
+
+        if len(cls_args) == 2 and cls_args[1] is Ellipsis:
+            return all(map(generic_issubclass, scls_args, repeat(cls_args[0])))
+
+    if scls_origin is Annotated:
+        return generic_issubclass(scls_args[0], cls)
+    if cls_origin is Annotated:
+        return generic_issubclass(scls, cls_args[0])
+
+    if origin_is_union(scls_origin):
+        return all(map(generic_issubclass, scls_args, repeat(cls)))
+    if origin_is_union(cls_origin):
+        return generic_issubclass(scls, cls_args)
+
+    if origin_is_literal(scls_origin) and origin_is_literal(cls_origin):
+        return set(scls_args) <= set(cls_args)
+    if isinstance(cls, TypeVar):
+        if cls.__constraints__:
+            return any(generic_issubclass(scls, p) for p in cls.__constraints__)
+        return generic_issubclass(scls, cls.__bound__) if cls.__bound__ else True
     try:
-        if isinstance(par, type):
-            return issubclass(cls, par)
-        if isinstance(par, AnnotatedType):
-            return generic_issubclass(cls, get_args(par)[0])
-        if _origin in Unions:
-            for p in get_args(par):
-                if generic_issubclass(cls, p):
-                    return True
-        if par.__class__ is tuple:
-            for p in par:
-                if generic_issubclass(cls, p):
-                    return True
-        if isinstance(par, TypeVar):
-            if par.__constraints__:
-                return any(generic_issubclass(cls, p) for p in par.__constraints__)
-            if par.__bound__:
-                return generic_issubclass(cls, par.__bound__)
-        if issubclass(cls, _origin):  # type: ignore
-            return True
+        if not issubclass(scls_origin, cls_origin):
+            return False
     except TypeError:
         return False
-    return False
+
+    if not cls_args:
+        return True
+
+    return len(scls_args) == len(cls_args) and all(
+        map(generic_issubclass, scls_args, cls_args)
+    )
