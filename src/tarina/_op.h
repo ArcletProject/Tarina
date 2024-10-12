@@ -87,6 +87,24 @@ static inline PyObject * tupleitem(PyObject *a, Py_ssize_t i)
 //     return result;
 // }
 
+Py_LOCAL_INLINE(int)
+unicode_eq(PyObject *str1, PyObject *str2)
+{
+    Py_ssize_t len = PyUnicode_GET_LENGTH(str1);
+    if (PyUnicode_GET_LENGTH(str2) != len) {
+        return 0;
+    }
+
+    int kind = PyUnicode_KIND(str1);
+    if (PyUnicode_KIND(str2) != kind) {
+        return 0;
+    }
+
+    const void *data1 = PyUnicode_DATA(str1);
+    const void *data2 = PyUnicode_DATA(str2);
+    return (memcmp(data1, data2, len * kind) == 0);
+}
+
 
 static setentry *
 set_lookkey(PySetObject *so, PyObject *key, Py_hash_t hash)
@@ -112,7 +130,7 @@ set_lookkey(PySetObject *so, PyObject *key, Py_hash_t hash)
                     return entry;
                 if (PyUnicode_CheckExact(startkey)
                     && PyUnicode_CheckExact(key)
-                    && _PyUnicode_EQ(startkey, key))
+                    && unicode_eq(startkey, key))
                     return entry;
                 table = so->table;
                 Py_INCREF(startkey);

@@ -54,7 +54,7 @@ jobs:
           pdm run make
       - name: Install self
         run: |
-          pdm install
+          pdm install -v
       - name: Test & Report
         run: |
           pdm run test
