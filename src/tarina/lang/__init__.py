@@ -6,9 +6,9 @@ import locale
 import os
 import sys
 from dataclasses import dataclass, field
-from inspect import stack
+import inspect
 from pathlib import Path
-from typing import Dict, Final, Union, final
+from typing import Dict, Final, Union, final, Callable
 
 from typing_extensions import Self
 
@@ -168,6 +168,7 @@ class _LangConfig:
         self.__locales = set(self.__langs.keys())
         self.__frozen: dict[str, list[str]] = (self._root_config.frozen or {}).copy()
         self.select_local()
+        self.callbacks: list[Callable[[str], None]] = []
 
     @property
     def locales(self):
@@ -184,15 +185,23 @@ class _LangConfig:
         """
         依据系统语言尝试自动选择语言
         """
+        old = self.__locale
         if (lc := get_locale()) and lc.replace("_", "-") in self.__langs:
             self.__locale = lc.replace("_", "-")
+            if old != self.__locale:
+                for i in self.callbacks:
+                    i(self.__locale)
         return self
 
     def select(self, locale: str) -> Self:
+        old = self.__locale
         locale = locale.replace("_", "-")
         if locale not in self.__langs:
             raise ValueError(self.require("lang", "error.locale").format(target=locale))
         self.__locale = locale
+        if old != self.__locale:
+            for i in self.callbacks:
+                i(self.__locale)
         return self
 
     def load_data(self, locale: str, data: Raw, config: _LangConfigData | None = None):
@@ -230,16 +239,26 @@ class _LangConfig:
     def load_file(self, filepath: Path, config: _LangConfigData | None = None):
         return self.load_data(filepath.stem, _get_lang(filepath), config)
 
-    def load_config(self, dir_path: Path):
+    def load_config(self, dir_path: Path, config_name: str | None = None):
         config = _get_config(dir_path)
+        name = config.name or config_name
+        if not name:
+            raise ValueError("Config name is required")
+        if name.startswith("$"):
+            raise ValueError("Config name cannot start with '$'")
         self.__default_locale = config.default or self.__default_locale
-        self.__configs[config.name or stack()[2].frame.f_globals["__name__"].rsplit(".", 1)[0]] = config
+        self.__configs[name] = config
         self.__frozen = merge(config.frozen or {}, self.__frozen)
         self.select_local()
         return config
 
     def load(self, root: Path) -> Self:
-        config = self.load_config(root)
+        if (cf := inspect.currentframe()) and (fb := cf.f_back):
+            mod_name = fb.f_globals["__loader__"].name
+            mod_name = mod_name.removesuffix(".i18n")
+        else:
+            mod_name = None
+        config = self.load_config(root, mod_name)
         for i in root.iterdir():
             if not i.is_file() or i.name.startswith(".") or i.suffix not in (".json", ".yaml", ".yml"):
                 continue

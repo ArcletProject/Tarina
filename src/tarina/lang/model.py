@@ -13,6 +13,9 @@ class LangItem:
         self.scope = scope
         self.type = type
 
+    def set(self, content: str, locale: Optional[str] = None):
+        lang.set(self.scope, self.type, content, locale)
+
     def __call__(self, locale: Optional[str] = None, **format_kwargs):
         return lang.require(self.scope, self.type, locale).format(**format_kwargs)
 
