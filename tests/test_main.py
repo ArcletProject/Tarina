@@ -1,5 +1,5 @@
 def test_generic_isinstance():
-    from typing import Any, Dict, List, Literal, TypeVar, Union
+    from typing import Any, Dict, List, Literal, TypeVar, Union, TypedDict
 
     from typing_extensions import Annotated
 
@@ -24,6 +24,13 @@ def test_generic_isinstance():
     assert not generic_isinstance({"a": 1}, dict[str, str])
     assert not generic_isinstance((1, 2), tuple[int, str])
     assert not generic_isinstance((1, "a"), tuple[int, str, str])
+
+    class User(TypedDict):
+        name: str
+        age: int
+
+    assert generic_isinstance({"name": "test", "age": 1}, User)
+    assert not generic_isinstance({"name": "test", "age": "1"}, User)
 
 
 def test_generic_issubclass():

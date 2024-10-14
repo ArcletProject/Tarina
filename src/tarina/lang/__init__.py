@@ -167,8 +167,8 @@ class _LangConfig:
         self.__langs: dict[str, dict[str, dict[str, str]]] = _get_scopes(root_dir)
         self.__locales = set(self.__langs.keys())
         self.__frozen: dict[str, list[str]] = (self._root_config.frozen or {}).copy()
-        self.select_local()
         self.callbacks: list[Callable[[str], None]] = []
+        self.select_local()
 
     @property
     def locales(self):

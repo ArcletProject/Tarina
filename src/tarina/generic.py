@@ -5,13 +5,14 @@ import types
 from collections.abc import Iterable, Mapping
 from itertools import repeat
 from types import GenericAlias
-from typing import Annotated, Any, Literal, TypeVar, Union
+from typing import Annotated, Any, Literal, TypeVar, Union, TypedDict
 
 from typing_extensions import Literal as typing_ext_Literal
 from typing_extensions import get_args
 from typing_extensions import get_origin as typing_ext_get_origin
 
 Unions = (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
+_TypedDictMeta = type(TypedDict.__mro_entries__(...)[0])  # type: ignore
 
 
 def origin_is_union(origin: type | None) -> bool:
@@ -43,8 +44,6 @@ def generic_isinstance(obj: Any, par: Any) -> bool:
         return True
     _origin = get_origin(par)
     try:
-        if isclass(par):
-            return isinstance(obj, par)
         if _origin is Annotated:
             return generic_isinstance(obj, get_args(par)[0])
         if _origin is Literal:
@@ -57,6 +56,21 @@ def generic_isinstance(obj: Any, par: Any) -> bool:
             for p in par:
                 if generic_isinstance(obj, p):
                     return True
+        if par.__class__ is _TypedDictMeta:
+            if not isinstance(obj, Mapping):
+                return False
+            for k, v in par.__annotations__.items():
+                if k in par.__required_keys__:
+                    if k not in obj:
+                        return False
+                    if not generic_isinstance(obj[k], v):
+                        return False
+                elif k in par.__optional_keys__:
+                    if k in obj and not generic_isinstance(obj[k], v):
+                        return False
+            return True
+        if isclass(par):
+            return isinstance(obj, par)
         if isinstance(par, TypeVar):  # pragma: no cover
             if par.__constraints__:
                 return any(generic_isinstance(obj, p) for p in par.__constraints__)
@@ -110,6 +124,13 @@ def generic_issubclass(scls: Any, cls: Any) -> Any:
         return generic_issubclass(scls_args[0], cls)
     if cls_origin is Annotated:
         return generic_issubclass(scls, cls_args[0])
+
+    if scls_origin.__class__ is _TypedDictMeta:
+        if cls_origin.__class__ is _TypedDictMeta:
+            return all(k in cls_origin.__annotations__ for k in scls_origin.__annotations__)
+        return generic_issubclass(cls_origin, dict)
+    if cls_origin.__class__ is _TypedDictMeta:
+        return generic_issubclass(scls, dict)
 
     if origin_is_union(scls_origin):
         return all(map(generic_issubclass, scls_args, repeat(cls)))
