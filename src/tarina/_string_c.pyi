@@ -1,3 +1,6 @@
+CRLF: str
+QUOTATION: dict[str, str]
+
 def split(text: str, separator: str, crlf: bool = True) -> list[str]:
     """尊重引号与转义的字符串切分
 

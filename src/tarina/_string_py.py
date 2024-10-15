@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 QUOTATION = {"'": "'", '"': '"'}
-CRLF = {"\n", "\r"}
+CRLF = "\n\r"
 
 
 def split_once(text: str, separator: str, crlf: bool = True):
@@ -15,7 +15,7 @@ def split_once(text: str, separator: str, crlf: bool = True):
     Returns:
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
-    index, out_text, quotation, escape = 0, "", "", False
+    index, out_text, quotation, escape, sep = 0, "", "", False, False
     text = text.lstrip()
     first_quoted_sep_index = -1
     last_quote_index = 0
@@ -24,9 +24,13 @@ def split_once(text: str, separator: str, crlf: bool = True):
         index += 1
         if char in separator or (crlf and char in CRLF):
             if not quotation:
-                break
+                sep = True
+                continue
             if first_quoted_sep_index == -1:
                 first_quoted_sep_index = index
+        if sep:
+            index -= 1
+            break
         if char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
             if index == 1 + escape + last_quote_index and not quotation:
                 quotation = QUOTATION[char]

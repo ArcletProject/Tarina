@@ -103,6 +103,8 @@ def test_split_once():
     assert (split_once('"123 "456 789', " ", True)) == ('"123', '"456 789')
 
     assert split_once("123 ", " ") == ("123", "")
+    assert split_once("123  ", " ") == ("123", "")
+    assert split_once("123   456", " ") == ("123", "456")
 
 
 def test_split():
@@ -128,6 +130,8 @@ def test_split():
     assert (split('123 """456 "789', " ", True)) == ["123", '"456', '"789']
 
     assert (split("123 456 ", " ")) == ["123", "456"]
+    assert (split("123 456  ", " ")) == ["123", "456"]
+    assert (split("123   456", " ")) == ["123", "456"]
 
 
 def test_lang():
