@@ -43,7 +43,7 @@ def split_once(text: str, separator: str, crlf: bool = True):
         escape = char == "\\"
     if index == tlen:
         if first_quoted_sep_index == -1:
-            return out_text if last_quote_index else text, ""
+            return out_text if last_quote_index else text.rstrip(separator), ""
         return text[: first_quoted_sep_index - 1], text[first_quoted_sep_index:]
     return out_text, text[index:]
 
@@ -59,6 +59,7 @@ def split(text: str, separator: str, crlf: bool = True):
     Returns:
         List[str]: 切割后的字符串, 可能含有空格
     """
+    text = text.strip(separator)
     result, quotation, escape = [], "", False
     quoted_sep_index = []
     last_sep_index = 0

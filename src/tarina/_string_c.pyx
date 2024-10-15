@@ -17,6 +17,11 @@ cdef extern from "Python.h":
     Py_UCS4 PyUnicode_READ_CHAR(object s, Py_ssize_t i)
     tuple PyUnicode_Partition(object str_obj, object sep_obj)
     cdef Py_ssize_t PY_SSIZE_T_MAX
+    str _PyUnicode_XStrip(object str_obj, int striptype, object chars_obj)
+
+DEF LEFTSTRIP = 0
+DEF RIGHTSTRIP = 1
+DEF BOTHSTRIP = 2
 
 cdef extern from "_op.h":
     bint set_contains_key(object anyset, object key) except -1
@@ -25,6 +30,7 @@ cdef dict QUOTES = {'"': '"', "'": "'"}
 cdef set CRLF = {'\r', '\n'}
 
 cpdef inline list split(str text, str separator, bint crlf=True):
+    text = _PyUnicode_XStrip(text, BOTHSTRIP, separator)
     cdef:
         bint escape = 0
         list result = []
@@ -75,7 +81,7 @@ cpdef inline list split(str text, str separator, bint crlf=True):
 
 
 cpdef inline tuple split_once(str text, str separator, bint crlf=True):
-    text = text.lstrip()
+    text = _PyUnicode_XStrip(text, LEFTSTRIP, separator)
     cdef:
         Py_ssize_t index = 0
         list out_text = []
@@ -110,6 +116,6 @@ cpdef inline tuple split_once(str text, str separator, bint crlf=True):
         escape = ch == 92
     if index == length:
         if first_quoted_sep_index == -1:
-            return PyUnicode_Join('', out_text) if last_quote_index else text, ''
+            return PyUnicode_Join('', out_text) if last_quote_index else _PyUnicode_XStrip(text, RIGHTSTRIP, separator), ''
         return PyUnicode_Substring(text, 0, first_quoted_sep_index-1), PyUnicode_Substring(text, first_quoted_sep_index, PY_SSIZE_T_MAX)
     return PyUnicode_Join('', out_text), PyUnicode_Substring(text, index, PY_SSIZE_T_MAX)
