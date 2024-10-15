@@ -74,7 +74,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, windows-arm64, macos-13, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
     steps:
       - uses: actions/checkout@v4
       - name: Set up QEMU
@@ -94,10 +94,10 @@ jobs:
           make cythonize
       - name: Ensure Macos 13
         run: |
-          if [[ ${{ matrix.os }} == 'macos-13' ]]; then
-            echo "CIBW_ARCHS_MACOS: x86_64 universal2" >> $GITHUB_ENV
+          if [[ "${{ matrix.os }}" -eq "macos-13" ]]; then
+            echo "CIBW_ARCHS_MACOS=x86_64 universal2" >> $GITHUB_ENV
           else
-            echo "CIBW_ARCHS_MACOS: arm64" >> $GITHUB_ENV
+            echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
           fi
         shell: bash
       - name: Build wheels
