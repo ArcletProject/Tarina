@@ -9,6 +9,7 @@ from cpython.unicode cimport (
     PyUnicode_Join,
     PyUnicode_Split,
     PyUnicode_Substring,
+    PyUnicode_Concat,
 )
 
 
@@ -28,6 +29,8 @@ cdef dict QUOTES = {'"': '"', "'": "'"}
 cdef unicode CRLF = "\n\r"
 
 cpdef inline list split(str text, str separator, bint crlf=True):
+    if crlf:
+        separator = PyUnicode_Concat(separator, CRLF)
     text = str_strip(text, BOTHSTRIP, separator)
     cdef:
         bint escape = 0
@@ -55,7 +58,7 @@ cpdef inline list split(str text, str separator, bint crlf=True):
                 PyList_Append(result, ch)
             if escape:
                 result[PyList_GET_SIZE(result)-1] = ch
-        elif str_contains(separator, ch) or (crlf and str_contains(CRLF, ch)):
+        elif str_contains(separator, ch):
             if quotation:
                 PyList_Append(quoted_sep_index, PyList_GET_SIZE(result) + 1)
                 PyList_Append(result, ch)
@@ -79,6 +82,8 @@ cpdef inline list split(str text, str separator, bint crlf=True):
 
 
 cpdef inline tuple split_once(str text, str separator, bint crlf=True):
+    if crlf:
+        separator = PyUnicode_Concat(separator, CRLF)
     text = str_strip(text, LEFTSTRIP, separator)
     cdef:
         Py_ssize_t index = 0
@@ -93,7 +98,7 @@ cpdef inline tuple split_once(str text, str separator, bint crlf=True):
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
         index += 1
-        if str_contains(separator, ch) or (crlf and str_contains(CRLF, ch)):
+        if str_contains(separator, ch):
             if quotation == 0:
                 sep = 1
                 continue
