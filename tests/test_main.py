@@ -159,6 +159,9 @@ def test_lang():
     lang.select("test")
     assert lang.require("lang", "error.type") == "test"
     assert lang.require("lang", "error.locale") == "'{target}' 不是合法的语种"
+    scope_lang = lang.dispatch("lang")
+    assert scope_lang.require("error.type") == "test"
+    assert scope_lang.require("error.locale") == "'{target}' 不是合法的语种"
     lang.load_file(Path(__file__).parent / "en-UK.yml")
     assert lang.locales == {"zh-CN", "test", "en-US", "en-UK"}
 

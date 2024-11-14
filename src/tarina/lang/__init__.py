@@ -157,6 +157,19 @@ def _get_scopes(root: Path) -> dict[str, dict[str, dict[str, str]]]:
     return result
 
 
+class _LangScope:
+    def __init__(self, scope: str):
+        self.scope = scope
+
+    def require(self, type: str, subtype: str | None = None, locale: str | None = None):
+        if subtype:
+            type = f"{type}.{subtype}"
+        return lang.require(self.scope, type, locale)
+
+    def set(self, type: str, content: str, locale: str | None = None):
+        return lang.set(self.scope, type, content, locale)
+
+
 @final
 class _LangConfig:
     def __init__(self):
@@ -295,6 +308,9 @@ class _LangConfig:
         elif type in self.__frozen.get(scope, []):
             raise ValueError(self.__langs[locale]["lang"]["error.type"].format(target=type, locale=locale, scope=scope))
         self.__langs[locale].setdefault(scope, {})[type] = content
+
+    def dispatch(self, scope: str) -> _LangScope:
+        return _LangScope(scope)
 
     def __repr__(self):
         return f"<LangConfig: {self.__locale}>"
