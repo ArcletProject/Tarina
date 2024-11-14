@@ -122,3 +122,67 @@ cpdef inline tuple split_once(str text, str separator, bint crlf=True):
             return PyUnicode_Join('', out_text) if last_quote_index else str_strip(text, RIGHTSTRIP, separator), ''
         return PyUnicode_Substring(text, 0, first_quoted_sep_index-1), PyUnicode_Substring(text, first_quoted_sep_index, PY_SSIZE_T_MAX)
     return PyUnicode_Join('', out_text), PyUnicode_Substring(text, index, PY_SSIZE_T_MAX)
+
+
+cpdef inline tuple split_once_without_escape(str text, str separator, bint crlf=True):
+    text = str_strip(text, LEFTSTRIP, separator)
+    cdef:
+        Py_ssize_t index = 0
+        Py_UCS4 quotation = 0
+        Py_UCS4 ch = 0
+        Py_ssize_t length = PyUnicode_GET_LENGTH(text)
+        Py_ssize_t first_quoted_sep_index = -1
+        Py_ssize_t last_quote_index = 0
+    while index < length:
+        ch = PyUnicode_READ_CHAR(text, index)
+        index += 1
+        if str_contains(separator, ch) or (crlf and str_contains(CRLF, ch)):
+            if quotation == 0:
+                break
+            if first_quoted_sep_index == -1:
+                first_quoted_sep_index = index
+        if PyDict_Contains(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
+            if index == 1 + last_quote_index and quotation == 0:
+                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
+            elif str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0 and ch == quotation:
+                last_quote_index = index
+                first_quoted_sep_index = -1
+                quotation = 0
+    if index == length:
+        if first_quoted_sep_index == -1:
+            return PyUnicode_Substring(text, 0, last_quote_index-1) if last_quote_index else str_strip(text, RIGHTSTRIP, separator), ''
+        return PyUnicode_Substring(text, 0, first_quoted_sep_index-1), PyUnicode_Substring(text, first_quoted_sep_index, PY_SSIZE_T_MAX)
+    return PyUnicode_Substring(text, 0, index-1), PyUnicode_Substring(text, index, PY_SSIZE_T_MAX)
+
+
+cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t offset, bint crlf=True):
+    cdef:
+        Py_ssize_t index = offset
+        Py_UCS4 quotation = 0
+        Py_UCS4 ch = 0
+        Py_ssize_t sep = 0
+        Py_ssize_t length = PyUnicode_GET_LENGTH(text)
+        Py_ssize_t first_quoted_sep_index = -1
+        Py_ssize_t last_quote_index = 0
+    while index < length:
+        ch = PyUnicode_READ_CHAR(text, index)
+        index += 1
+        if str_contains(separator, ch) or (crlf and str_contains(CRLF, ch)):
+            if quotation == 0:
+                sep = sep + 1
+                continue
+            if first_quoted_sep_index == -1:
+                first_quoted_sep_index = index
+        if sep:
+            index -= 1
+            break
+        if PyDict_Contains(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
+            if index == 1 + last_quote_index and quotation == 0:
+                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
+            elif str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0 and ch == quotation:
+                last_quote_index = index
+                first_quoted_sep_index = -1
+                quotation = 0
+    if index == length and first_quoted_sep_index != -1:
+        return first_quoted_sep_index, sep
+    return index, sep
