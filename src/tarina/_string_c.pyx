@@ -212,7 +212,7 @@ cdef class String:
         self.next_index = 0
 
     def step(self, str separator, bint crlf=True):
-        cdef offset
+        cdef offset =  0
         self.next_index, offset = split_once_index_only(self.text, separator, self.left_index, crlf)
         self.right_index = self.next_index - offset
 

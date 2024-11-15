@@ -134,6 +134,26 @@ def test_split():
     assert (split("123   456", " ")) == ["123", "456"]
 
 
+def test_string():
+    from tarina import String
+
+    s = String("123 456 789")
+    s.step(" ")
+    assert s.val() == "123"
+    s.apply()
+    s.step(" ")
+    assert s.val() == "456"
+    assert s.val() == "456"
+    # only apply can change the value
+    s.step(" ")
+    assert s.val() == "456"
+    assert not s.complete
+    s.apply()
+    s.step(" ")
+    assert s.val() == "789"
+    s.apply()
+    assert s.complete
+
 def test_lang():
     """测试 i18n"""
     from pathlib import Path
