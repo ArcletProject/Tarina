@@ -51,3 +51,22 @@ def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = T
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
     ...
+
+
+class String:
+    left_index: int
+    right_index: int
+    next_index: int
+    _len: int
+    text: str
+
+    def __init__(self, text: str): ...
+
+    def step(self, separator: str, crlf: bool = True) -> None: ...
+
+    def val(self) -> str: ...
+
+    def apply(self) -> None: ...
+
+    @property
+    def complete(self) -> bool: ...

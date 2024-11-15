@@ -65,6 +65,8 @@ def split_once_without_escape(text: str, separator: str, crlf: bool = True):
     Returns:
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
+    if crlf:
+        separator += CRLF
     index, quotation = 0, ""
     text = text.lstrip()
     first_quoted_sep_index = -1
@@ -72,9 +74,8 @@ def split_once_without_escape(text: str, separator: str, crlf: bool = True):
     tlen = len(text)
     for char in text:
         index += 1
-        if char in separator or (crlf and char in CRLF):
+        if char in separator:
             if not quotation:
-                #index -= 1
                 break
             if first_quoted_sep_index == -1:
                 first_quoted_sep_index = index
@@ -104,6 +105,8 @@ def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = T
     Returns:
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
+    if crlf:
+        separator += CRLF
     index = offset
     quotation = ""
     sep = 0
@@ -113,7 +116,7 @@ def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = T
     tlen = len(text)
     for char in text:
         index += 1
-        if char in separator or (crlf and char in CRLF):
+        if char in separator:
             if not quotation:
                 sep += 1
                 continue
@@ -134,7 +137,6 @@ def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = T
             return index, sep
         return first_quoted_sep_index, sep
     return index, sep
-
 
 
 def split(text: str, separator: str, crlf: bool = True):
@@ -186,3 +188,39 @@ def split(text: str, separator: str, crlf: bool = True):
         for i in quoted_sep_index:
             result[i] = "\0"
     return str.join("", result).split("\0")
+
+
+class String:
+    left_index: int
+    right_index: int
+    next_index: int
+    _len: int
+    text: str
+
+    def __init__(self, text: str):
+        self.text = text
+        self._len = len(text)
+        self.left_index = 0
+        self.right_index = 0
+        self.next_index = 0
+
+    def step(self, separator: str, crlf: bool = True):
+        self.next_index, offset = split_once_index_only(self.text, separator, self.left_index, crlf)
+        self.right_index = self.next_index - offset
+
+    def val(self):
+        return self.text[self.left_index:self.right_index]
+
+    def apply(self):
+        self.left_index = self.next_index
+        self.right_index = self._len
+
+    @property
+    def complete(self):
+        return self.left_index == self._len
+
+    def __repr__(self):
+        return f"String({self.text!r}[{self.left_index}:{self.right_index}])"
+
+    def __str__(self):
+        return self.val()

@@ -28,7 +28,7 @@ cdef extern from "_op.h":
 cdef dict QUOTES = {'"': '"', "'": "'"}
 cdef unicode CRLF = "\n\r"
 
-cpdef inline list split(str text, str separator, bint crlf=True):
+def split(str text, str separator, bint crlf=True):
     if crlf:
         separator = PyUnicode_Concat(separator, CRLF)
     text = str_strip(text, BOTHSTRIP, separator)
@@ -81,7 +81,7 @@ cpdef inline list split(str text, str separator, bint crlf=True):
     return PyUnicode_Split(PyUnicode_Join('', result), '\1', -1)
 
 
-cpdef inline tuple split_once(str text, str separator, bint crlf=True):
+def split_once(str text, str separator, bint crlf=True):
     if crlf:
         separator = PyUnicode_Concat(separator, CRLF)
     text = str_strip(text, LEFTSTRIP, separator)
@@ -129,7 +129,9 @@ cpdef inline tuple split_once(str text, str separator, bint crlf=True):
     return PyUnicode_Join('', out_text), PyUnicode_Substring(text, index, PY_SSIZE_T_MAX)
 
 
-cpdef inline tuple split_once_without_escape(str text, str separator, bint crlf=True):
+def split_once_without_escape(str text, str separator, bint crlf=True):
+    if crlf:
+        separator = PyUnicode_Concat(separator, CRLF)
     text = str_strip(text, LEFTSTRIP, separator)
     cdef:
         Py_ssize_t index = 0
@@ -141,7 +143,7 @@ cpdef inline tuple split_once_without_escape(str text, str separator, bint crlf=
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
         index += 1
-        if str_contains(separator, ch) or (crlf and str_contains(CRLF, ch)):
+        if str_contains(separator, ch):
             if quotation == 0:
                 break
             if first_quoted_sep_index == -1:
@@ -161,6 +163,8 @@ cpdef inline tuple split_once_without_escape(str text, str separator, bint crlf=
 
 
 cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t offset, bint crlf=True):
+    if crlf:
+        separator = PyUnicode_Concat(separator, CRLF)
     cdef:
         Py_ssize_t index = offset
         Py_UCS4 quotation = 0
@@ -172,9 +176,9 @@ cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t off
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
         index += 1
-        if str_contains(separator, ch) or (crlf and str_contains(CRLF, ch)):
+        if str_contains(separator, ch):
             if quotation == 0:
-                sep = sep + 1
+                sep += 1
                 continue
             if first_quoted_sep_index == -1:
                 first_quoted_sep_index = index
@@ -191,3 +195,40 @@ cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t off
     if index == length and first_quoted_sep_index != -1:
         return first_quoted_sep_index, sep
     return index, sep
+
+
+cdef class String:
+    cdef Py_ssize_t left_index
+    cdef Py_ssize_t right_index
+    cdef Py_ssize_t next_index
+    cdef Py_ssize_t _len
+    cdef str text
+
+    def __init__(self, str text):
+        self.text = text
+        self._len = PyUnicode_GET_LENGTH(text)
+        self.left_index = 0
+        self.right_index = 0
+        self.next_index = 0
+
+    def step(self, str separator, bint crlf=True):
+        cdef offset
+        self.next_index, offset = split_once_index_only(self.text, separator, self.left_index, crlf)
+        self.right_index = self.next_index - offset
+
+    def val(self):
+        return PyUnicode_Substring(self.text, self.left_index, self.right_index)
+
+    def apply(self):
+        self.left_index = self.next_index
+        self.right_index = self._len
+
+    @property
+    def complete(self):
+        return self.left_index == self._len
+
+    def __repr__(self):
+        return f"String({self.text!r}[{self.left_index}:{self.right_index}])"
+
+    def __str__(self):
+        return self.val()

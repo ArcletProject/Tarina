@@ -1,0 +1,1 @@
+cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t offset, bint crlf=True)
