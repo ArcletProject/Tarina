@@ -54,6 +54,89 @@ def split_once(text: str, separator: str, crlf: bool = True):
     return out_text, text[index:]
 
 
+def split_once_without_escape(text: str, separator: str, crlf: bool = True):
+    """尊重引号的字符串切分, 只切割一次
+
+    Args:
+        text (str): 要切割的字符串
+        separator (str): 切割符.
+        crlf (bool): 是否去除 \n 与 \r，默认为 True
+
+    Returns:
+        Tuple[str, str]: 切割后的字符串, 可能含有空格
+    """
+    index, quotation = 0, ""
+    text = text.lstrip()
+    first_quoted_sep_index = -1
+    last_quote_index = 0
+    tlen = len(text)
+    for char in text:
+        index += 1
+        if char in separator or (crlf and char in CRLF):
+            if not quotation:
+                #index -= 1
+                break
+            if first_quoted_sep_index == -1:
+                first_quoted_sep_index = index
+        if char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
+            if index == 1 + last_quote_index and not quotation:
+                quotation = QUOTATION[char]
+            elif text[index - 2] not in separator and char == quotation:
+                last_quote_index = index
+                quotation = ""
+                first_quoted_sep_index = -1
+    if index == tlen:
+        if first_quoted_sep_index == -1:
+            return text[:last_quote_index] if last_quote_index else text.rstrip(separator), ""
+        return text[: first_quoted_sep_index - 1], text[first_quoted_sep_index:]
+    return text[:index-1], text[index:]
+
+
+def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = True):
+    """尊重引号的字符串切分, 只切割一次
+
+    Args:
+        text (str): 要切割的字符串
+        separator (str): 切割符.
+        offset (int): 起始位置
+        crlf (bool): 是否去除 \n 与 \r，默认为 True
+
+    Returns:
+        Tuple[str, str]: 切割后的字符串, 可能含有空格
+    """
+    index = offset
+    quotation = ""
+    sep = 0
+    text = text[offset:]
+    first_quoted_sep_index = -1
+    last_quote_index = 0
+    tlen = len(text)
+    for char in text:
+        index += 1
+        if char in separator or (crlf and char in CRLF):
+            if not quotation:
+                sep += 1
+                continue
+            if first_quoted_sep_index == -1:
+                first_quoted_sep_index = index
+        if sep:
+            index -= 1
+            break
+        if char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
+            if index == 1 + last_quote_index and not quotation:
+                quotation = QUOTATION[char]
+            elif text[index - offset- 2] not in separator and char == quotation:
+                last_quote_index = index
+                quotation = ""
+                first_quoted_sep_index = -1
+    if index == tlen:
+        if first_quoted_sep_index == -1:
+            return index, sep
+        return first_quoted_sep_index, sep
+    return index, sep
+
+
+
 def split(text: str, separator: str, crlf: bool = True):
     """尊重引号与转义的字符串切分
 

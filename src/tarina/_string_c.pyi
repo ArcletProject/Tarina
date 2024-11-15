@@ -25,3 +25,29 @@ def split_once(text: str, separator: str, crlf: bool = True) -> tuple[str, str]:
         Tuple[str, str]: 切割后的字符串, 可能含有空格
     """
     ...
+
+def split_once_without_escape(text: str, separator: str, crlf: bool = True) -> tuple[str, str]:
+    """尊重引号的字符串切分, 只切割一次
+
+    Args:
+        text (str): 要切割的字符串
+        separator (str): 切割符.
+        crlf (bool): 是否去除 \n 与 \r，默认为 True
+    Returns:
+        Tuple[str, str]: 切割后的字符串, 可能含有空格
+    """
+    ...
+
+def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = True):
+    """尊重引号的字符串切分, 只切割一次
+
+    Args:
+        text (str): 要切割的字符串
+        separator (str): 切割符.
+        offset (int): 起始位置
+        crlf (bool): 是否去除 \n 与 \r，默认为 True
+
+    Returns:
+        Tuple[str, str]: 切割后的字符串, 可能含有空格
+    """
+    ...
