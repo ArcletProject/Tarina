@@ -212,8 +212,15 @@ class String:
         return self.text[self.left_index:self.right_index]
 
     def apply(self):
-        self.left_index = self.next_index
-        self.right_index = self._len
+        self.right_index = self.left_index = self.next_index
+
+    def rest(self):
+        return self.text[self.next_index:]
+
+    def set_left(self, index: int):
+        self.next_index = self.left_index = index
+        if self.right_index > index:
+            self.right_index = index
 
     @property
     def complete(self):
