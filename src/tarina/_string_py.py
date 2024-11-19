@@ -217,7 +217,7 @@ class String:
     def rest(self):
         return self.text[self.next_index:]
 
-    def set_left(self, index: int):
+    def align_to(self, index: int):
         self.next_index = self.left_index = index
         if self.right_index > index:
             self.right_index = index
@@ -225,6 +225,10 @@ class String:
     @property
     def complete(self):
         return self.left_index == self._len
+
+    @property
+    def will_complete(self):
+        return self.next_index == self._len
 
     def __repr__(self):
         return f"String({self.text!r}[{self.left_index}:{self.right_index}])"

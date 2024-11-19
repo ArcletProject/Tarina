@@ -225,7 +225,7 @@ cdef class String:
     def rest(self):
         return PyUnicode_Substring(self.text, self.next_index, self._len)
 
-    def set_left(self, int index):
+    def align_to(self, int index):
         self.next_index = self.left_index = index
         if self.right_index > index:
             self.right_index = index
@@ -233,6 +233,10 @@ cdef class String:
     @property
     def complete(self):
         return self.left_index == self._len
+
+    @property
+    def will_complete(self):
+        return self.next_index == self._len
 
     def __repr__(self):
         return f"String({self.text!r}[{self.left_index}:{self.right_index}])"
