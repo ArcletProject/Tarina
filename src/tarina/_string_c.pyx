@@ -157,7 +157,7 @@ def split_once_without_escape(str text, str separator, bint crlf=True):
                 quotation = 0
     if index == length:
         if first_quoted_sep_index == -1:
-            return PyUnicode_Substring(text, 0, last_quote_index-1) if last_quote_index else str_strip(text, RIGHTSTRIP, separator), ''
+            return PyUnicode_Substring(text, 0, last_quote_index) if last_quote_index else str_strip(text, RIGHTSTRIP, separator), ''
         return PyUnicode_Substring(text, 0, first_quoted_sep_index-1), PyUnicode_Substring(text, first_quoted_sep_index, PY_SSIZE_T_MAX)
     return PyUnicode_Substring(text, 0, index-1), PyUnicode_Substring(text, index, PY_SSIZE_T_MAX)
 
