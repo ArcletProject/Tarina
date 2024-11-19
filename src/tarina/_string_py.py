@@ -212,8 +212,8 @@ class String:
     def val(self):
         return self.text[self.left_index:self.next_index - self.offset]
 
-    def apply(self, left: int | None = None):
-        if left is None:
+    def apply(self, left: int = -1):
+        if left == -1:
             self.left_index = self.next_index
         else:
             self.next_index = self.left_index = left

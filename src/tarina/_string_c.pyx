@@ -219,8 +219,8 @@ cdef class String:
     def val(self):
         return PyUnicode_Substring(self.text, self.left_index, self.next_index - self.offset)
 
-    def apply(self, int left = None):
-        if left is None:
+    def apply(self, int left = -1):
+        if left == -1:
             self.left_index = self.next_index
         else:
             self.next_index = self.left_index = left
