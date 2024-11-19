@@ -55,9 +55,8 @@ def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = T
 
 class String:
     left_index: int
-    right_index: int
+    offset: int
     next_index: int
-    _len: int
     text: str
 
     def __init__(self, text: str): ...

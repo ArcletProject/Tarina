@@ -137,22 +137,27 @@ def test_split():
 def test_string():
     from tarina import String
 
-    s = String("123 456 789")
+    s = String("123 '45 6' '78  '9")
     s.step(" ")
     assert s.val() == "123"
     s.apply()
     s.step(" ")
-    assert s.val() == "456"
-    assert s.val() == "456"
+    assert s.val() == "'45 6'"
+    assert s.val() == "'45 6'"
     # only apply can change the value
     s.step(" ")
-    assert s.val() == "456"
+    assert s.val() == "'45 6'"
     assert not s.complete
     s.apply()
     s.step(" ")
-    assert s.val() == "789"
+    assert s.val() == "'78"
+    s.apply()
+    s.step(" ")
+    assert s.val() == "'9"
+    assert s.will_complete
     s.apply()
     assert s.complete
+
 
 def test_lang():
     """测试 i18n"""

@@ -110,32 +110,34 @@ def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = T
     index = offset
     quotation = ""
     sep = 0
-    text = text[offset:]
-    first_quoted_sep_index = -1
+    quoted_sep_index = -1
+    quoted_sep = 0
     last_quote_index = 0
     tlen = len(text)
-    for char in text:
+    while index < tlen:
+        char = text[index]
         index += 1
         if char in separator:
             if not quotation:
                 sep += 1
                 continue
-            if first_quoted_sep_index == -1:
-                first_quoted_sep_index = index
+            quoted_sep_index = index
+            quoted_sep += 1
         if sep:
             index -= 1
             break
         if char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
-            if index == 1 + last_quote_index and not quotation:
+            if index == 1 + (last_quote_index or offset) and not quotation:
                 quotation = QUOTATION[char]
-            elif text[index - offset- 2] not in separator and char == quotation:
+            elif text[index - 2] not in separator and char == quotation:
                 last_quote_index = index
                 quotation = ""
-                first_quoted_sep_index = -1
+                quoted_sep_index = -1
+                quoted_sep = 0
     if index == tlen:
-        if first_quoted_sep_index == -1:
+        if quoted_sep_index == -1:
             return index, sep
-        return first_quoted_sep_index, sep
+        return quoted_sep_index, quoted_sep
     return index, sep
 
 
@@ -192,7 +194,7 @@ def split(text: str, separator: str, crlf: bool = True):
 
 class String:
     left_index: int
-    right_index: int
+    offset: int
     next_index: int
     _len: int
     text: str
@@ -201,26 +203,25 @@ class String:
         self.text = text
         self._len = len(text)
         self.left_index = 0
-        self.right_index = 0
+        self.offset = 0
         self.next_index = 0
 
     def step(self, separator: str, crlf: bool = True):
-        self.next_index, offset = split_once_index_only(self.text, separator, self.left_index, crlf)
-        self.right_index = self.next_index - offset
+        self.next_index, self.offset = split_once_index_only(self.text, separator, self.left_index, crlf)
 
     def val(self):
-        return self.text[self.left_index:self.right_index]
+        return self.text[self.left_index:self.next_index - self.offset]
 
     def apply(self):
-        self.right_index = self.left_index = self.next_index
+        self.left_index = self.next_index
+        self.offset = 0
 
     def rest(self):
-        return self.text[self.next_index:]
+        return self.text[self.left_index:]
 
     def align_to(self, index: int):
         self.next_index = self.left_index = index
-        if self.right_index > index:
-            self.right_index = index
+        self.offset = 0
 
     @property
     def complete(self):
@@ -231,7 +232,7 @@ class String:
         return self.next_index == self._len
 
     def __repr__(self):
-        return f"String({self.text!r}[{self.left_index}:{self.right_index}])"
+        return f"String({self.text!r}[{self.left_index}:{self.next_index - self.offset}])"
 
     def __str__(self):
         return self.val()

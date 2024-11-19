@@ -171,7 +171,8 @@ cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t off
         Py_UCS4 ch = 0
         Py_ssize_t sep = 0
         Py_ssize_t length = PyUnicode_GET_LENGTH(text)
-        Py_ssize_t first_quoted_sep_index = -1
+        Py_ssize_t quoted_sep_index = -1
+        Py_ssize_t quoted_sep = 0
         Py_ssize_t last_quote_index = 0
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
@@ -180,55 +181,54 @@ cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t off
             if quotation == 0:
                 sep += 1
                 continue
-            if first_quoted_sep_index == -1:
-                first_quoted_sep_index = index
+            quoted_sep_index = index
+            quoted_sep += 1
         if sep:
             index -= 1
             break
         if PyDict_Contains(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
-            if index == 1 + last_quote_index and quotation == 0:
+            if index == 1 + (last_quote_index or offset) and quotation == 0:
                 quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
             elif str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0 and ch == quotation:
                 last_quote_index = index
-                first_quoted_sep_index = -1
+                quoted_sep_index = -1
+                quoted_sep = 0
                 quotation = 0
-    if index == length and first_quoted_sep_index != -1:
-        return first_quoted_sep_index, sep
+    if index == length and quoted_sep_index != -1:
+        return quoted_sep_index, quoted_sep
     return index, sep
 
 
 cdef class String:
-    cdef Py_ssize_t left_index
-    cdef Py_ssize_t right_index
-    cdef Py_ssize_t next_index
+    cdef public Py_ssize_t left_index
+    cdef public Py_ssize_t next_index
+    cdef public Py_ssize_t offset
     cdef Py_ssize_t _len
-    cdef str text
+    cdef public str text
 
     def __init__(self, str text):
         self.text = text
         self._len = PyUnicode_GET_LENGTH(text)
         self.left_index = 0
-        self.right_index = 0
+        self.offset = 0
         self.next_index = 0
 
     def step(self, str separator, bint crlf=True):
-        cdef offset =  0
-        self.next_index, offset = split_once_index_only(self.text, separator, self.left_index, crlf)
-        self.right_index = self.next_index - offset
+        self.next_index, self.offset = split_once_index_only(self.text, separator, self.left_index, crlf)
 
     def val(self):
-        return PyUnicode_Substring(self.text, self.left_index, self.right_index)
+        return PyUnicode_Substring(self.text, self.left_index, self.next_index - self.offset)
 
     def apply(self):
-        self.right_index = self.left_index = self.next_index
+        self.left_index = self.next_index
+        self.offset = 0
 
     def rest(self):
-        return PyUnicode_Substring(self.text, self.next_index, self._len)
+        return PyUnicode_Substring(self.text, self.left_index, self._len)
 
     def align_to(self, int index):
         self.next_index = self.left_index = index
-        if self.right_index > index:
-            self.right_index = index
+        self.offset = 0
 
     @property
     def complete(self):
