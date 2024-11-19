@@ -239,7 +239,7 @@ cdef class String:
         return self.next_index == self._len
 
     def __repr__(self):
-        return f"String({self.text!r}[{self.left_index}:{self.right_index}])"
+        return f"String({self.text!r}[{self.left_index}:{self.next_index - self.offset}])"
 
     def __str__(self):
         return self.val()
