@@ -196,12 +196,12 @@ class String:
     left_index: int
     offset: int
     next_index: int
-    _len: int
+    len: int
     text: str
 
     def __init__(self, text: str):
         self.text = text
-        self._len = len(text)
+        self.len = len(text)
         self.left_index = 0
         self.offset = 0
         self.next_index = 0
@@ -212,24 +212,23 @@ class String:
     def val(self):
         return self.text[self.left_index:self.next_index - self.offset]
 
-    def apply(self):
-        self.left_index = self.next_index
+    def apply(self, left: int | None = None):
+        if left is None:
+            self.left_index = self.next_index
+        else:
+            self.next_index = self.left_index = left
         self.offset = 0
 
     def rest(self):
         return self.text[self.left_index:]
 
-    def align_to(self, index: int):
-        self.next_index = self.left_index = index
-        self.offset = 0
-
     @property
     def complete(self):
-        return self.left_index == self._len
+        return self.left_index == self.len
 
     @property
     def will_complete(self):
-        return self.next_index == self._len
+        return self.next_index == self.len
 
     def __repr__(self):
         return f"String({self.text!r}[{self.left_index}:{self.next_index - self.offset}])"

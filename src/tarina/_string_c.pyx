@@ -203,12 +203,12 @@ cdef class String:
     cdef public Py_ssize_t left_index
     cdef public Py_ssize_t next_index
     cdef public Py_ssize_t offset
-    cdef Py_ssize_t _len
+    cdef public Py_ssize_t len
     cdef public str text
 
     def __init__(self, str text):
         self.text = text
-        self._len = PyUnicode_GET_LENGTH(text)
+        self.len = PyUnicode_GET_LENGTH(text)
         self.left_index = 0
         self.offset = 0
         self.next_index = 0
@@ -219,24 +219,23 @@ cdef class String:
     def val(self):
         return PyUnicode_Substring(self.text, self.left_index, self.next_index - self.offset)
 
-    def apply(self):
-        self.left_index = self.next_index
+    def apply(self, int left = None):
+        if left is None:
+            self.left_index = self.next_index
+        else:
+            self.next_index = self.left_index = left
         self.offset = 0
 
     def rest(self):
-        return PyUnicode_Substring(self.text, self.left_index, self._len)
-
-    def align_to(self, int index):
-        self.next_index = self.left_index = index
-        self.offset = 0
+        return PyUnicode_Substring(self.text, self.left_index, self.len)
 
     @property
     def complete(self):
-        return self.left_index == self._len
+        return self.left_index == self.len
 
     @property
     def will_complete(self):
-        return self.next_index == self._len
+        return self.next_index == self.len
 
     def __repr__(self):
         return f"String({self.text!r}[{self.left_index}:{self.next_index - self.offset}])"
