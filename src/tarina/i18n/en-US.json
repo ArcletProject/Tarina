@@ -6,6 +6,10 @@
       "scope": "'{target}' is not a valid scope in '{locale}'",
       "type": "'{target}' is not a valid type in '{locale}:{scope}'"
     },
+    "frozen": {
+      "scope": "'{target}' is forbidden to modify",
+      "type": "'{target}' is forbidden to modify in '{scope}'"
+    },
     "miss_require_scope": "lang file '{locale}' missed require scope '{target}'",
     "miss_require_type": "'{scope}' missed require type '{target}' in lang file '{locale}'"
   }

@@ -12,6 +12,13 @@
             "type"
           ]
         },
+        {
+          "subtype": "frozen",
+          "types": [
+            "scope",
+            "type"
+          ]
+        },
         "miss_require_scope",
         "miss_require_type"
       ]

@@ -1,9 +1,9 @@
 {
   "default": "zh-CN",
   "frozen": [
-    "lang.*"
+    "lang"
   ],
   "require": [
-    "lang.*"
+    "lang"
   ]
 }

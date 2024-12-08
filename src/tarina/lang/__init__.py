@@ -8,6 +8,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 from typing import Callable, Final, Union, final
 
 from typing_extensions import Self
@@ -19,8 +20,8 @@ WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name =
 @dataclass
 class _LangConfigData:
     default: str | None = None
-    frozen: dict[str, list[str]] | None = None
-    require: dict[str, list[str]] | None = None
+    frozen: dict[str, bool | list[str]] | None = None
+    require: dict[str, bool | list[str]] | None = None
     name: str | None = None
 
     locales: set[str] = field(default_factory=set)
@@ -70,9 +71,9 @@ def _get_config(root: Path) -> _LangConfigData:
         raise FileNotFoundError(f"Config file not found in {root}")
     with (root / ".config.json").open("r", encoding="utf-8") as f:
         data = json.load(f)
-        if "frozen" in data:
+        if "frozen" in data and isinstance(data["frozen"], list):
             data["frozen"] = _expand(data["frozen"])
-        if "require" in data:
+        if "require" in data and isinstance(data["require"], list):
             data["require"] = _expand(data["require"])
         return _LangConfigData(**data)
 
@@ -115,18 +116,16 @@ def merge(source: dict, target: dict) -> dict:
 
 
 def _expand(data: list[str]):
-    result: dict[str, list[str]] = {}
+    result: dict[str, bool | list[str]] = {}
     for i in data:
-        if "." not in i:
-            i += ".*"
-        parts = i.split(".", 1)
-        s = parts[0]
-        if s not in result:
-            result[s] = []
-            if not parts[1].startswith("*"):
-                result[s].append(parts[1])
-        elif result[s] and not parts[1].startswith("*"):
-            result[s].append(parts[1])
+        if ":" not in i:
+            result[i] = True
+        else:
+            scope, types = i.split(":", 1)
+            if types == "*":
+                result[scope] = True
+            elif types.strip():
+                result.setdefault(scope, []).append(types.strip())  # type: ignore
     return result
 
 
@@ -179,7 +178,7 @@ class _LangConfig:
         self.__default_locale: str = self._root_config.default or "en-US"
         self.__langs: dict[str, dict[str, dict[str, str]]] = _get_scopes(root_dir)
         self.__locales = set(self.__langs.keys())
-        self.__frozen: dict[str, list[str]] = (self._root_config.frozen or {}).copy()
+        self.__frozen: dict[str, bool | list[str]] = (self._root_config.frozen or {}).copy()
         self.callbacks: list[Callable[[str], None]] = []
         self.select_local()
 
@@ -189,6 +188,10 @@ class _LangConfig:
 
     def locales_in(self, config_name: str):
         return self.__configs[config_name].locales
+
+    @property
+    def configs(self):
+        return MappingProxyType(self.__configs)
 
     @property
     def current(self):
@@ -226,9 +229,9 @@ class _LangConfig:
             for scope, ignores in self.__frozen.items():
                 if scope not in target or scope not in source:
                     continue
-                if not ignores:
+                if ignores is True:
                     source.pop(scope)
-                else:
+                elif isinstance(ignores, list):
                     for i in ignores:
                         source[scope] = {
                             k: v for k, v in source[scope].items() if not (k.startswith(i) and k in target[scope])
@@ -239,15 +242,16 @@ class _LangConfig:
             self.__langs[locale] = flatten(data)
         if not config or not config.require:
             return
-        for scope, requries in config.require.items():
-            if scope not in self.__langs[locale]:
+        for scope, requires in config.require.items():
+            if requires and scope not in self.__langs[locale]:
                 raise KeyError(self.require("lang", "miss_require_scope", locale).format(locale=locale, target=scope))
-            for t in requries:
-                if any(k.startswith(t) for k in self.__langs[locale][scope]):
-                    continue
-                raise KeyError(
-                    self.require("lang", "miss_require_type", locale).format(locale=locale, scope=scope, target=t)
-                )
+            if isinstance(requires, list):
+                for t in requires:
+                    if any(k.startswith(t) for k in self.__langs[locale][scope]):
+                        continue
+                    raise KeyError(
+                        self.require("lang", "miss_require_type", locale).format(locale=locale, scope=scope, target=t)
+                    )
 
     def load_file(self, filepath: Path, config: _LangConfigData | None = None):
         return self.load_data(filepath.stem, _get_lang(filepath), config)
@@ -304,9 +308,10 @@ class _LangConfig:
         if locale not in self.__langs:
             raise ValueError(self.__langs[self.__locale]["lang"]["error.locale"].format(target=locale))
         if scope in self.__frozen:
-            raise ValueError(self.__langs[locale]["lang"]["error.scope"].format(target=scope, locale=locale))
-        elif type in self.__frozen.get(scope, []):
-            raise ValueError(self.__langs[locale]["lang"]["error.type"].format(target=type, locale=locale, scope=scope))
+            if self.__frozen[scope] is True:
+                raise ValueError(self.__langs[locale]["lang"]["frozen.scope"].format(target=scope))
+            elif isinstance(frozens := self.__frozen[scope], list) and any(type.startswith(t) for t in frozens):
+                raise ValueError(self.__langs[locale]["lang"]["frozen.type"].format(target=type, scope=scope))
         self.__langs[locale].setdefault(scope, {})[type] = content
 
     def dispatch(self, scope: str) -> _LangScope:

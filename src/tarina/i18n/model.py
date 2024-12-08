@@ -10,8 +10,14 @@ class Lang_Error:
     type: LangItem = LangItem("lang", "error.type")
 
 
+class Lang_Frozen:
+    scope: LangItem = LangItem("lang", "frozen.scope")
+    type: LangItem = LangItem("lang", "frozen.type")
+
+
 class Lang_:
     error = Lang_Error
+    frozen = Lang_Frozen
     miss_require_scope: LangItem = LangItem("lang", "miss_require_scope")
     miss_require_type: LangItem = LangItem("lang", "miss_require_type")
 

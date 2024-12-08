@@ -2,9 +2,6 @@
   "title": "Lang Schema",
   "description": "Schema for lang file",
   "type": "object",
-  "required": [
-    "lang"
-  ],
   "properties": {
     "lang": {
       "title": "Lang",
@@ -23,6 +20,24 @@
               "description": "value of lang item type 'locale'",
               "type": "string"
             },
+            "scope": {
+              "title": "scope",
+              "description": "value of lang item type 'scope'",
+              "type": "string"
+            },
+            "type": {
+              "title": "type",
+              "description": "value of lang item type 'type'",
+              "type": "string"
+            }
+          }
+        },
+        "frozen": {
+          "title": "Frozen",
+          "description": "Scope 'frozen' of lang item",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
             "scope": {
               "title": "scope",
               "description": "value of lang item type 'scope'",

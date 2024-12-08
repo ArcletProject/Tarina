@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_generic_isinstance():
     from typing import Any, Dict, List, Literal, TypeVar, Union, TypedDict
 
@@ -172,14 +175,16 @@ def test_lang():
     assert lang.require("lang", "error.type", "en-US") == "'{target}' is not a valid type in '{locale}:{scope}'"
     lang.select("en-US")
     assert lang.current == "en-US"
-    try:
+
+    with pytest.raises(ValueError, match="'ru-RU' is not a valid language locale"):
         lang.select("ru-RU")
-    except ValueError as e:
-        assert str(e) == "'ru-RU' is not a valid language locale"
-    try:
-        lang.load_data("test", {})
-    except KeyError as e:
-        assert str(e) == "\"lang file 'test' missed require scope 'lang'\""
+
+    with pytest.raises(KeyError, match="lang file 'test' missed require scope 'lang'"):
+        lang.load_data("test", {}, lang._root_config)
+
+    with pytest.raises(ValueError, match="'lang' is forbidden to modify"):
+        lang.set("lang", "miss_require_scope", "test")
+
     lang.load_data("test", {"lang": {"error": {"type": "test"}}})
     lang.select("test")
     assert lang.require("lang", "error.type") == "test"
