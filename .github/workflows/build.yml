@@ -70,11 +70,43 @@ jobs:
           path: dist/*.whl
 
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }} ${{ matrix.qemu }} ${{ matrix.musl }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-13, macos-14]
+        qemu: [ '' ]
+        musl: [ "" ]
+        include:
+          # Split ubuntu/musl jobs for the sake of speed-up
+          - os: ubuntu-latest
+            qemu: ppc64le
+            musl: ""
+          - os: ubuntu-latest
+            qemu: armv7l
+            musl: ""
+          - os: ubuntu-latest
+            qemu: s390x
+            musl: ""
+          - os: ubuntu-latest
+            qemu: riscv64
+            musl: ""
+          - os: ubuntu-latest
+            qemu: riscv64
+            musl: musllinux
+          - os: ubuntu-latest
+            qemu: s390x
+            musl: musllinux
+          - os: ubuntu-latest
+            qemu: ppc64le
+            musl: musllinux
+          - os: ubuntu-latest
+            qemu: armv7l
+            musl: musllinux
+          - os: ubuntu-latest
+            musl: musllinux
+          - os: ubuntu-24.04-arm
+            musl: musllinux
     steps:
       - uses: actions/checkout@v4
       - name: Set up QEMU
@@ -82,6 +114,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: all
+          image: tonistiigi/binfmt:qemu-v8.1.5
         id: qemu
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -100,15 +133,30 @@ jobs:
             echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
           fi
         shell: bash
+      - name: Prepare emulation
+        run: |
+          if [[ -n "${{ matrix.qemu }}" && "${{ runner.arch }}" == "X64" ]]; then
+            # Build emulated architectures only if QEMU is set,
+            # use default "auto" otherwise
+            echo "CIBW_ARCHS_LINUX=${{ matrix.qemu }}" >> $GITHUB_ENV
+          else
+            echo "CIBW_ARCHS_LINUX=auto" >> $GITHUB_ENV
+          fi
+        shell: bash
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.3
         env:
-          CIBW_ARCHS_LINUX: ${{ runner.arch == 'X64' && 'auto ppc64le s390x riscv64 armv7l' || 'auto riscv64 armv7l' }}
+          CIBW_SKIP: cp313t* cp314t* pp* ${{ matrix.musl == 'musllinux' && '*manylinux*' || '*musllinux*' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         if: github.event_name != 'pull_request'
         with:
-          name: pkg-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          name: >-
+            pkg-wheels-${{ matrix.os }}-${{ strategy.job-index }}-${{ matrix.musl }}-${{
+              matrix.qemu
+              && matrix.qemu
+              || 'native'
+            }}
           path: ./wheelhouse/*.whl
 
   release:
