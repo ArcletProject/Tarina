@@ -1,7 +1,7 @@
 import keyword
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 from tarina.lang import lang
 from tarina.lang.schema import _Subtypes, _TemplateDict, get_template
@@ -21,6 +21,12 @@ class LangItem:
 
     def __iter__(self):
         return iter([self.scope, self.type])
+
+    def __str__(self):
+        return lang.require(self.scope, self.type)
+
+    def cast(self):
+        return cast(str, self)
 
 
 class LangModel:

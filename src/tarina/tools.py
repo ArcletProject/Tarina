@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+import asyncio
+import inspect
 import re
-from collections.abc import Awaitable, Generator, Iterable
-from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar, overload
+from collections.abc import Awaitable, Generator, Iterable, Coroutine, AsyncGenerator
+from functools import wraps
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar, overload, Protocol
 
 from typing_extensions import Concatenate, ParamSpec
 
 from .guard import is_async
 
 T = TypeVar("T")
+R = TypeVar("R")
+P = ParamSpec("P")
+C = TypeVar("C")
+_T_co = TypeVar("_T_co", covariant=True)
+
+
+class SupportsNext(Protocol[_T_co]):
+    def __next__(self) -> _T_co: ...
 
 
 def group_dict(iterable: Iterable, key_callable: Callable[[Any], Any]):
@@ -26,6 +37,46 @@ async def run_always_await(target: Callable[..., Any] | Callable[..., Awaitable[
     return obj
 
 
+def run_sync(call: Callable[P, T]) -> Callable[P, Coroutine[None, None, T]]:
+    """一个用于包装 sync function 为 async function 的装饰器
+
+    参数:
+        call: 被装饰的同步函数
+    """
+
+    @wraps(call)
+    async def _wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        result = await asyncio.to_thread(call, *args, **kwargs)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    return _wrapper
+
+
+def run_sync_generator(call: Callable[P, Generator[T]]) -> Callable[P, AsyncGenerator[T, None]]:
+    """一个用于包装 sync generator function 为 async generator function 的装饰器"""
+
+    def _next(it: SupportsNext[C]) -> C:
+        try:
+            return next(it)
+        except StopIteration:
+            raise StopAsyncIteration from None
+
+    async_next = run_sync(_next)
+
+    @wraps(call)
+    async def _wrapper(*args: P.args, **kwargs: P.kwargs) -> AsyncGenerator[T, None]:
+        gen = call(*args, **kwargs)
+        try:
+            while True:
+                yield await async_next(gen)
+        except StopAsyncIteration:
+            return
+
+    return _wrapper
+
+
 def gen_subclass(cls: type[T]) -> Generator[type[T], None, None]:
     """生成某个类的所有子类 (包括其自身)
     Args:
@@ -38,11 +89,6 @@ def gen_subclass(cls: type[T]) -> Generator[type[T], None, None]:
         if TYPE_CHECKING:
             assert issubclass(sub_cls, cls)
         yield from gen_subclass(sub_cls)
-
-
-R = TypeVar("R")
-P = ParamSpec("P")
-C = TypeVar("C")
 
 
 @overload
@@ -133,3 +179,59 @@ def param_case(source: str) -> str:
 
 def snake_case(source: str) -> str:
     return re.sub(".[A-Z]", lambda mat: mat[0][0] + "_" + mat[0][1:].lower(), uncapitalize(source).replace("-", "_"))
+
+
+def coroutine(func: Callable[P, T]) -> Callable[P, Coroutine[Any, Any, T]]:
+    @wraps(func)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def nest_dict_update(old: dict, new: dict) -> dict:
+    """递归更新字典"""
+    for k, v in new.items():
+        if k not in old:
+            old[k] = v
+        elif isinstance(v, dict):
+            old[k] = nest_dict_update(old[k], v)
+        elif isinstance(v, list):
+            old[k] = nest_list_update(old[k], v)
+        else:
+            old[k] = v
+    return old
+
+
+def nest_list_update(old: list, new: list) -> list:
+    """递归更新列表"""
+    for i, v in enumerate(new):
+        if i >= len(old):
+            old.append(v)
+        elif isinstance(v, dict):
+            old[i] = nest_dict_update(old[i], v)
+        elif isinstance(v, list):
+            old[i] = nest_list_update(old[i], v)
+        else:
+            old[i] = v
+    return old
+
+
+def nest_obj_update(old, new, attrs: list[str]):
+    """递归更新对象"""
+    for attr in attrs:
+        new_attr = getattr(new, attr)
+        if not hasattr(old, attr):
+            setattr(old, attr, new_attr)
+            continue
+        old_attr = getattr(old, attr)
+        if not isinstance(new_attr, old_attr.__class__):
+            setattr(old, attr, new_attr)
+            continue
+        if isinstance(new_attr, dict):
+            nest_dict_update(old_attr, new_attr)
+        elif isinstance(new_attr, list):
+            nest_list_update(old_attr, new_attr)
+        else:
+            setattr(old, attr, new_attr)
+    return old

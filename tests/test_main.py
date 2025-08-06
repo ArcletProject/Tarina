@@ -195,6 +195,12 @@ def test_lang():
     lang.load_file(Path(__file__).parent / "en-UK.yml")
     assert lang.locales == {"zh-CN", "test", "en-US", "en-UK"}
 
+    from tarina.i18n.model import Lang_
+
+    lang.select("zh-CN")
+    assert f"{Lang_.error.type}" == "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
+    assert Lang_.error.type.cast() != "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
+
 
 def test_init_spec():
     from dataclasses import dataclass

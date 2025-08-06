@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import inspect
+import sys
 from collections.abc import Mapping
 from typing import Any, Callable
 
@@ -78,3 +79,35 @@ def signatures(callable_target: Callable) -> list[tuple[str, Any, Any]]:
         )
         for param in get_signature(callable_target)
     ]
+
+
+def parent_frame_namespace(*, parent_depth: int = 2, force: bool = False) -> dict[str, Any] | None:
+    frame = sys._getframe(parent_depth)
+    if force:
+        return frame.f_locals
+
+    # if either of the following conditions are true, the class is defined at the top module level
+    # to better understand why we need both of these checks, see
+    # https://github.com/pydantic/pydantic/pull/10113#discussion_r1714981531
+    if frame.f_back is None or frame.f_code.co_name == "<module>":
+        return None
+
+    return frame.f_locals
+
+
+def get_module_ns_of(obj: Any) -> dict[str, Any]:
+    module_name = getattr(obj, "__module__", None)
+    if module_name:
+        try:
+            return sys.modules[module_name].__dict__
+        except KeyError:
+            return {}
+    return {}
+
+
+def merge_cls_and_parent_ns(cls: type[Any], parent_namespace: dict[str, Any] | None = None) -> dict[str, Any]:
+    ns = get_module_ns_of(cls).copy()
+    if parent_namespace is not None:
+        ns.update(parent_namespace)
+    ns[cls.__name__] = cls
+    return ns
