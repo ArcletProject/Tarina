@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Awaitable, Coroutine, Generator, AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Coroutine, Generator
 from functools import lru_cache
 from typing import Any, Callable
 

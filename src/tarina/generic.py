@@ -5,7 +5,7 @@ import types
 from collections.abc import Iterable, Mapping
 from itertools import repeat
 from types import GenericAlias
-from typing import Annotated, Any, Literal, TypeVar, Union, TypedDict
+from typing import Annotated, Any, ClassVar, Literal, TypedDict, TypeVar, Union
 
 from typing_extensions import Literal as typing_ext_Literal
 from typing_extensions import get_args
@@ -30,6 +30,10 @@ def origin_is_literal(origin: type | None) -> bool:
 
 def get_origin(obj: Any) -> Any:
     return typing_ext_get_origin(obj) or obj
+
+
+def is_classvar(origin):
+    return get_origin(origin) is ClassVar
 
 
 def isclass(cls: Any) -> bool:
@@ -164,9 +168,7 @@ def generic_issubclass(scls: Any, cls: Any) -> Any:
     return _map_generic_issubclass(scls_args, cls_args, failfast=True)
 
 
-def _map_generic_issubclass(
-    scls: Iterable[Any], cls: Iterable[Any], *, failfast: bool = False
-) -> bool | list[Any]:
+def _map_generic_issubclass(scls: Iterable[Any], cls: Iterable[Any], *, failfast: bool = False) -> bool | list[Any]:
     results = []
     for scls_arg, cls_arg in zip(scls, cls):
         if not (result := generic_issubclass(scls_arg, cls_arg)) and failfast:

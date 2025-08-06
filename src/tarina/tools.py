@@ -3,9 +3,9 @@ from __future__ import annotations
 import asyncio
 import inspect
 import re
-from collections.abc import Awaitable, Generator, Iterable, Coroutine, AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Coroutine, Generator, Iterable
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar, overload, Protocol
+from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, TypeVar, overload
 
 from typing_extensions import Concatenate, ParamSpec
 
@@ -16,6 +16,16 @@ R = TypeVar("R")
 P = ParamSpec("P")
 C = TypeVar("C")
 _T_co = TypeVar("_T_co", covariant=True)
+
+TCallable = TypeVar("TCallable", bound=Callable)
+
+
+def annotation(**types):
+    def wrapper(func: TCallable) -> TCallable:
+        func.__annotations__ = types
+        return func
+
+    return wrapper
 
 
 class SupportsNext(Protocol[_T_co]):

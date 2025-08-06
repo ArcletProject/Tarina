@@ -10,11 +10,11 @@ from .lang import lang as lang
 from .lru import LRU as LRU
 from .signature import get_signature as get_signature
 from .signature import signatures as signatures
+from .string import String as String
 from .string import split as split
 from .string import split_once as split_once
 from .string import split_once_index_only as split_once_index_only
 from .string import split_once_without_escape as split_once_without_escape
-from .string import String as String
 from .tools import gen_subclass as gen_subclass
 from .tools import group_dict as group_dict
 from .tools import init_spec as init_spec

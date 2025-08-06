@@ -5,11 +5,11 @@ from cpython.dict cimport PyDict_Contains, PyDict_GetItem
 from cpython.int cimport PyInt_AS_LONG
 from cpython.list cimport PyList_Append, PyList_GET_ITEM, PyList_GET_SIZE, PyList_Insert
 from cpython.unicode cimport (
+    PyUnicode_Concat,
     PyUnicode_GET_LENGTH,
     PyUnicode_Join,
     PyUnicode_Split,
     PyUnicode_Substring,
-    PyUnicode_Concat,
 )
 
 

@@ -90,7 +90,7 @@ def split_once_without_escape(text: str, separator: str, crlf: bool = True):
         if first_quoted_sep_index == -1:
             return text[:last_quote_index] if last_quote_index else text.rstrip(separator), ""
         return text[: first_quoted_sep_index - 1], text[first_quoted_sep_index:]
-    return text[:index-1], text[index:]
+    return text[: index - 1], text[index:]
 
 
 def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = True):
@@ -210,7 +210,7 @@ class String:
         self.next_index, self.offset = split_once_index_only(self.text, separator, self.left_index, crlf)
 
     def val(self):
-        return self.text[self.left_index:self.next_index - self.offset]
+        return self.text[self.left_index : self.next_index - self.offset]
 
     def apply(self, left: int = -1):
         if left == -1:
@@ -220,7 +220,7 @@ class String:
         self.offset = 0
 
     def rest(self):
-        return self.text[self.left_index:]
+        return self.text[self.left_index :]
 
     @property
     def complete(self):

@@ -2,7 +2,7 @@ import pytest
 
 
 def test_generic_isinstance():
-    from typing import Any, Dict, List, Literal, TypeVar, Union, TypedDict
+    from typing import Any, Dict, List, Literal, TypedDict, TypeVar, Union
 
     from typing_extensions import Annotated
 
