@@ -5,7 +5,16 @@ import types
 from collections.abc import Iterable, Mapping
 from itertools import repeat
 from types import GenericAlias
-from typing import Annotated, Any, ClassVar, Literal, TypedDict, TypeVar, Union
+from typing import (
+    Annotated,
+    Any,
+    ClassVar,
+    Literal,
+    TypedDict,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from typing_extensions import Literal as typing_ext_Literal
 from typing_extensions import get_args
@@ -38,6 +47,13 @@ def is_classvar(origin):
 
 def isclass(cls: Any) -> bool:
     return isinstance(cls, type) and not isinstance(cls, GenericAlias)
+
+
+def is_optional(scls, cls):
+    scls_origin, scls_args = get_origin(scls) or scls, get_args(scls)
+    if origin_is_union(scls_origin) and len(scls_args) == 2 and scls_args[1] is type(None):
+        return generic_issubclass(scls_args[0], cls)
+    return False
 
 
 def generic_isinstance(obj: Any, par: Any) -> bool:
@@ -101,22 +117,34 @@ def generic_isinstance(obj: Any, par: Any) -> bool:
     return False
 
 
-def generic_issubclass(scls: Any, cls: Any) -> Any:
+@overload
+def generic_issubclass(scls: Any, cls: Any) -> bool: ...
+
+
+@overload
+def generic_issubclass(scls: Any, cls: Any, list_: Literal[True]) -> list[Any] | bool: ...
+
+
+def generic_issubclass(scls: Any, cls: Any, list_: bool = False) -> Any:
     """检查 scls 是否是 cls 中的一个子类, 支持泛型, Any, Union
     Args:
         scls (Any): 要检查的类
         cls (Any): 要检查的类的父类
+        list_ (bool): 是否返回列表, 默认为 False
     Returns:
         bool: 是否是父类
     """
     if isinstance(cls, tuple):
-        return _map_generic_issubclass(repeat(scls), cls)
+        return any(generic_issubclass(scls, c, list_) for c in cls)  # type: ignore
 
     if cls is Any:
         return True
 
     if scls is Any:
-        return [cls]
+        return cls
+
+    if isclass(scls) and isclass(cls):
+        return issubclass(scls, cls)
 
     try:
         return issubclass(scls, cls)
@@ -128,34 +156,34 @@ def generic_issubclass(scls: Any, cls: Any) -> Any:
 
     if scls_origin is tuple and cls_origin is tuple:
         if len(scls_args) == 2 and scls_args[1] is Ellipsis:
-            return generic_issubclass(scls_args[0], cls_args)
+            return generic_issubclass(scls_args[0], cls_args, list_)  # type: ignore
 
         if len(cls_args) == 2 and cls_args[1] is Ellipsis:
-            return _map_generic_issubclass(scls_args, repeat(cls_args[0]), failfast=True)
+            return _map_generic_issubclass(scls_args, repeat(cls_args[0]), failfast=True, list_=list_)
 
     if scls_origin is Annotated:
-        return generic_issubclass(scls_args[0], cls)
+        return generic_issubclass(scls_args[0], cls, list_)  # type: ignore
     if cls_origin is Annotated:
-        return generic_issubclass(scls, cls_args[0])
+        return generic_issubclass(scls, cls_args[0], list_)  # type: ignore
 
     if scls_origin.__class__ is _TypedDictMeta:
         if cls_origin.__class__ is _TypedDictMeta:
             return all(k in cls_origin.__annotations__ for k in scls_origin.__annotations__)
-        return generic_issubclass(cls_origin, dict)
+        return generic_issubclass(cls_origin, dict, list_)  # type: ignore
     if cls_origin.__class__ is _TypedDictMeta:
-        return generic_issubclass(scls, dict)
+        return generic_issubclass(scls, dict, list_)  # type: ignore
 
     if origin_is_union(scls_origin):
-        return _map_generic_issubclass(scls_args, repeat(cls), failfast=True)
+        return _map_generic_issubclass(scls_args, repeat(cls), failfast=True, list_=list_)
     if origin_is_union(cls_origin):
-        return generic_issubclass(scls, cls_args)
+        return generic_issubclass(scls, cls_args, list_)  # type: ignore
 
     if origin_is_literal(scls_origin) and origin_is_literal(cls_origin):
         return set(scls_args) <= set(cls_args)
     if isinstance(cls, TypeVar):
         if cls.__constraints__:
-            return any(generic_issubclass(scls, p) for p in cls.__constraints__)
-        return generic_issubclass(scls, cls.__bound__) if cls.__bound__ else True
+            return any(generic_issubclass(scls, p, list_) for p in cls.__constraints__)  # type: ignore
+        return generic_issubclass(scls, cls.__bound__, list_) if cls.__bound__ else True  # type: ignore
     try:
         if not issubclass(scls_origin, cls_origin):
             return False
@@ -165,17 +193,19 @@ def generic_issubclass(scls: Any, cls: Any) -> Any:
     if not cls_args:
         return True
 
-    return _map_generic_issubclass(scls_args, cls_args, failfast=True)
+    return _map_generic_issubclass(scls_args, cls_args, failfast=True, list_=list_)
 
 
-def _map_generic_issubclass(scls: Iterable[Any], cls: Iterable[Any], *, failfast: bool = False) -> bool | list[Any]:
+def _map_generic_issubclass(
+    scls: Iterable[Any], cls: Iterable[Any], *, failfast: bool = False, list_: bool = True
+) -> bool | list[Any]:
     results = []
     for scls_arg, cls_arg in zip(scls, cls):
-        if not (result := generic_issubclass(scls_arg, cls_arg)) and failfast:
+        if not (result := generic_issubclass(scls_arg, cls_arg, True)) and failfast:
             return False
-        elif isinstance(result, list):
-            results.extend(result)
-        elif not isinstance(result, bool):
-            results.append(result)
+        else:
+            results.extend(result if isinstance(result, list) else [result])
 
-    return results or False
+    if list_:
+        return results or False
+    return all(results)

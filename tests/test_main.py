@@ -37,11 +37,12 @@ def test_generic_isinstance():
 
 
 def test_generic_issubclass():
-    from typing import Any, Dict, List, Literal, TypeVar, Union
+    from typing import Any, List, Literal, TypeVar, Union
 
     from typing_extensions import Annotated
 
     from tarina import generic_issubclass
+    from tarina.generic import is_optional
 
     S = TypeVar("S", bound=str)
     assert generic_issubclass(str, Any)
@@ -49,6 +50,9 @@ def test_generic_issubclass():
     assert generic_issubclass(List[int], List[int])
     assert generic_issubclass(int, Annotated[int, lambda x: x > 0])
     assert generic_issubclass(str, S)
+    assert generic_issubclass(Literal["a"], Literal["a", "b"])
+
+    assert is_optional(Union[str, None], str)
 
 
 def test_lru():
