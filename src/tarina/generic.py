@@ -141,7 +141,7 @@ def generic_issubclass(scls: Any, cls: Any, list_: bool = False) -> Any:
         return True
 
     if scls is Any:
-        return cls
+        return [cls] if list_ else cls
 
     if isclass(scls) and isclass(cls):
         return issubclass(scls, cls)
