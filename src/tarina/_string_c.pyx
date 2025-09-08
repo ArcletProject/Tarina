@@ -25,7 +25,7 @@ cdef extern from "_op.h":
     cdef int RIGHTSTRIP
     cdef int BOTHSTRIP
 
-cdef dict QUOTES = {'"': '"', "'": "'"}
+cdef dict QUOTATION = {'"': '"', "'": "'"}
 cdef unicode CRLF = "\n\r"
 
 def split(str text, str separator, bint crlf=True):
@@ -48,10 +48,15 @@ def split(str text, str separator, bint crlf=True):
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
         index += 1
-        if PyDict_Contains(QUOTES, ch):
+        if PyDict_Contains(QUOTATION, ch):
             if index == 1 + escape + max(last_sep_index, last_quote_index) and quotation == 0:
-                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
-            elif (PyList_GET_SIZE(result) == 0 or str_contains(separator, <Py_UCS4>(<object>PyList_GET_ITEM(result, PyList_GET_SIZE(result)-1))) == 0) and ch == quotation:
+                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTATION, ch), 0)
+            elif (
+                PyList_GET_SIZE(result) == 0
+                or index == length
+                or PyDict_Contains(QUOTATION, PyUnicode_READ_CHAR(text, index))
+                or str_contains(separator, PyUnicode_READ_CHAR(text, index))
+            ) and ch == quotation:
                 quotation = 0
                 last_quote_index = index
             else:
@@ -107,10 +112,10 @@ def split_once(str text, str separator, bint crlf=True):
         if sep == 1:
             index -= 1
             break
-        if PyDict_Contains(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
+        if PyDict_Contains(QUOTATION, ch):  # 遇到引号括起来的部分跳过分隔
             if index == 1 + escape + last_quote_index and quotation == 0:
-                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
-            elif str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0 and ch == quotation:
+                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTATION, ch), 0)
+            elif (index == length or str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0) and ch == quotation:
                 last_quote_index = index
                 first_quoted_sep_index = -1
                 quotation = 0
@@ -148,10 +153,10 @@ def split_once_without_escape(str text, str separator, bint crlf=True):
                 break
             if first_quoted_sep_index == -1:
                 first_quoted_sep_index = index
-        if PyDict_Contains(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
+        if PyDict_Contains(QUOTATION, ch):  # 遇到引号括起来的部分跳过分隔
             if index == 1 + last_quote_index and quotation == 0:
-                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
-            elif str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0 and ch == quotation:
+                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTATION, ch), 0)
+            elif (index == length or str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0) and ch == quotation:
                 last_quote_index = index
                 first_quoted_sep_index = -1
                 quotation = 0
@@ -186,10 +191,10 @@ cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t off
         if sep:
             index -= 1
             break
-        if PyDict_Contains(QUOTES, ch):  # 遇到引号括起来的部分跳过分隔
+        if PyDict_Contains(QUOTATION, ch):  # 遇到引号括起来的部分跳过分隔
             if index == 1 + (last_quote_index or offset) and quotation == 0:
-                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTES, ch), 0)
-            elif str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0 and ch == quotation:
+                quotation = PyUnicode_READ_CHAR(<str>PyDict_GetItem(QUOTATION, ch), 0)
+            elif (index == length or str_contains(separator, PyUnicode_READ_CHAR(text, index-2)) == 0) and ch == quotation:
                 last_quote_index = index
                 quoted_sep_index = -1
                 quoted_sep = 0

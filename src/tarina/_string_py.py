@@ -36,7 +36,7 @@ def split_once(text: str, separator: str, crlf: bool = True):
         if char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
             if index == 1 + escape + last_quote_index and not quotation:
                 quotation = QUOTATION[char]
-            elif text[index - 2] not in separator and char == quotation:
+            elif (text[index - 2] not in separator or index == tlen) and char == quotation:
                 last_quote_index = index
                 quotation = ""
                 first_quoted_sep_index = -1
@@ -82,7 +82,7 @@ def split_once_without_escape(text: str, separator: str, crlf: bool = True):
         if char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
             if index == 1 + last_quote_index and not quotation:
                 quotation = QUOTATION[char]
-            elif text[index - 2] not in separator and char == quotation:
+            elif (text[index - 2] not in separator or index == tlen) and char == quotation:
                 last_quote_index = index
                 quotation = ""
                 first_quoted_sep_index = -1
@@ -129,7 +129,7 @@ def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = T
         if char in QUOTATION:  # 遇到引号括起来的部分跳过分隔
             if index == 1 + (last_quote_index or offset) and not quotation:
                 quotation = QUOTATION[char]
-            elif text[index - 2] not in separator and char == quotation:
+            elif (text[index - 2] not in separator or index == tlen) and char == quotation:
                 last_quote_index = index
                 quotation = ""
                 quoted_sep_index = -1
@@ -155,6 +155,7 @@ def split(text: str, separator: str, crlf: bool = True):
     if crlf:
         separator += CRLF
     text = text.strip(separator)
+    tlen = len(text)
     result, quotation, escape = [], "", False
     quoted_sep_index = []
     last_sep_index = 0
@@ -165,7 +166,7 @@ def split(text: str, separator: str, crlf: bool = True):
         if char in QUOTATION:
             if index == 1 + escape + max(last_sep_index, last_quote_index) and not quotation:
                 quotation = QUOTATION[char]
-            elif (not result or result[-1] not in separator) and char == quotation:
+            elif (not result or index == tlen or text[index] in QUOTATION or text[index] in separator) and char == quotation:
                 quotation = ""
                 last_quote_index = index
             else:

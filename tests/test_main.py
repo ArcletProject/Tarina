@@ -113,6 +113,8 @@ def test_split_once():
     assert split_once("123  ", " ") == ("123", "")
     assert split_once("123   456", " ") == ("123", "456")
 
+    assert split_once('" 123 456 "', " ") == (' 123 456 ', '') # 保留引号内空格
+
 
 def test_split():
     """测试分割函数, 能以引号扩起空格, 并允许保留引号"""
@@ -139,6 +141,8 @@ def test_split():
     assert (split("123 456 ", " ")) == ["123", "456"]
     assert (split("123 456  ", " ")) == ["123", "456"]
     assert (split("123   456", " ")) == ["123", "456"]
+
+    assert (split('" 123 456 "', " ")) == [" 123 456 "]  # 保留引号内空格
 
 
 def test_string():
