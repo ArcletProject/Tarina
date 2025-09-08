@@ -24,7 +24,7 @@ jobs:
     name: Build sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -48,7 +48,7 @@ jobs:
     name: Build pure wheel
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -108,7 +108,7 @@ jobs:
           - os: ubuntu-24.04-arm
             musl: musllinux
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up QEMU
         if: runner.os == 'Linux' && runner.arch == 'X64'
         uses: docker/setup-qemu-action@v3
@@ -144,7 +144,7 @@ jobs:
           fi
         shell: bash
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.1.3
+        uses: pypa/cibuildwheel@v3.1.4
         env:
           CIBW_SKIP: cp313t* cp314t* pp* ${{ matrix.musl == 'musllinux' && '*manylinux*' || '*musllinux*' }}
       - name: Upload wheels
@@ -168,15 +168,15 @@ jobs:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: dist
           pattern: pkg-*
           merge-multiple: true
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.5.0
+        uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           verbose: true
           user: __token__
