@@ -41,9 +41,11 @@ def split(str text, str separator, bint crlf=True):
         Py_ssize_t length = PyUnicode_GET_LENGTH(text)
         list quoted_sep_index = []
         Py_ssize_t last_sep_index = 0
+        Py_ssize_t last_sep_pos = 0
         Py_ssize_t last_quote_index = 0
-        Py_ssize_t _len
+        Py_ssize_t _len = 0
         Py_ssize_t i = 0
+        Py_ssize_t reslen = 0
 
     while index < length:
         ch = PyUnicode_READ_CHAR(text, index)
@@ -64,22 +66,25 @@ def split(str text, str separator, bint crlf=True):
             if escape:
                 result[PyList_GET_SIZE(result)-1] = ch
         elif str_contains(separator, ch):
+            reslen = PyList_GET_SIZE(result)
             if quotation:
-                PyList_Append(quoted_sep_index, PyList_GET_SIZE(result) + 1)
+                PyList_Append(quoted_sep_index, reslen + 1)
                 PyList_Append(result, ch)
             else:
                 last_sep_index = index
-                if result and (<object>PyList_GET_ITEM(result, PyList_GET_SIZE(result)-1)) != '\1':
+                last_sep_pos = reslen + 1
+                if result and (<object>PyList_GET_ITEM(result, reslen-1)) != '\1':
                     PyList_Append(result, '\1')
+                quoted_sep_index = []
         else:
             PyList_Append(result, ch)
         escape = ch == 92
     if PyList_GET_SIZE(result) == 0:
         return []
-    if quotation and PyList_GET_SIZE(quoted_sep_index):
-        PyList_Insert(result, last_sep_index, PyUnicode_READ_CHAR(text,  last_quote_index or last_sep_index))
+    _len = PyList_GET_SIZE(quoted_sep_index)
+    if quotation and _len:
+        PyList_Insert(result, last_sep_pos, PyUnicode_READ_CHAR(text,  last_sep_index or last_quote_index))
         # result[first_quoted_sep_index] = '\1'
-        _len = PyList_GET_SIZE(quoted_sep_index)
         while i < _len:
             result[PyInt_AS_LONG(<object>PyList_GET_ITEM(quoted_sep_index, i))] = '\1'
             i += 1
@@ -234,6 +239,11 @@ cdef class String:
     def rest(self):
         return PyUnicode_Substring(self.text, self.left_index, self.len)
 
+    def reset(self):
+        self.left_index = 0
+        self.offset = 0
+        self.next_index = 0
+
     @property
     def complete(self):
         return self.left_index == self.len
@@ -247,3 +257,15 @@ cdef class String:
 
     def __str__(self):
         return self.val()
+
+    def __iter__(self):
+        self.reset()
+        return self
+
+    def __next__(self):
+        if self.complete:
+            raise StopIteration
+        self.step(" ")
+        val = self.val()
+        self.apply()
+        return val
