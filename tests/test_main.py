@@ -217,6 +217,9 @@ def test_lang():
     assert f"{Lang_.error.type}" == "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
     assert Lang_.error.type.cast() != "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
 
+    lang.select("en-AUS")
+    assert lang.current == "en-US"  # fallback to en-US cause en-AUS not exists and en-UK is behind en-US
+
 
 def test_init_spec():
     from dataclasses import dataclass

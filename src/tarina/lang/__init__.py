@@ -202,8 +202,14 @@ class _LangConfig:
         依据系统语言尝试自动选择语言
         """
         old = self.__locale
-        if (lc := get_locale()) and lc.replace("_", "-") in self.__langs:
-            self.__locale = lc.replace("_", "-")
+        if lc := get_locale():
+            lc = lc.replace("_", "-")
+            if lc in self.__langs:
+                self.__locale = lc
+            elif any((match := k).startswith(lc.split("-")[0] + "-") for k in self.__langs):
+                self.__locale = match
+            else:
+                return self
             if old != self.__locale:
                 for i in self.callbacks:
                     i(self.__locale)
@@ -211,10 +217,14 @@ class _LangConfig:
 
     def select(self, locale: str) -> Self:
         old = self.__locale
-        locale = locale.replace("_", "-")
-        if locale not in self.__langs:
-            raise ValueError(self.require("lang", "error.locale").format(target=locale))
-        self.__locale = locale
+        lc = locale.replace("_", "-")
+        if lc in self.__langs:
+            pass
+        elif any((match := k).startswith(lc.split("-")[0] + "-") for k in self.__langs):
+            lc = match
+        else:
+            raise ValueError(self.require("lang", "error.locale").format(target=lc))
+        self.__locale = lc
         if old != self.__locale:
             for i in self.callbacks:
                 i(self.__locale)
@@ -283,17 +293,21 @@ class _LangConfig:
         return self
 
     def require(self, scope: str, type: str, locale: str | None = None) -> str:
-        locale = locale or self.__locale
-        if locale not in self.__langs:
-            raise ValueError(self.__langs[self.__locale]["lang"]["error.locale"].format(target=locale))
-        if scope in self.__langs[locale]:
-            _types = self.__langs[locale][scope]
+        lc = locale or self.__locale
+        if lc in self.__langs:
+            pass
+        elif any((match := k).startswith(lc.split("-")[0] + "-") for k in self.__langs):
+            lc = match
+        else:
+            raise ValueError(self.__langs[self.__locale]["lang"]["error.locale"].format(target=lc))
+        if scope in self.__langs[lc]:
+            _types = self.__langs[lc][scope]
         elif scope in self.__langs[self.__locale]:
             _types = self.__langs[self.__locale][scope]
         elif scope in self.__langs[self.__default_locale]:
             _types = self.__langs[self.__default_locale][scope]
         else:
-            raise ValueError(self.__langs[locale]["lang"]["error.scope"].format(target=scope, locale=locale))
+            raise ValueError(self.__langs[lc]["lang"]["error.scope"].format(target=scope, locale=lc))
         if type in _types:
             return _types[type]
         elif type in self.__langs[self.__locale][scope]:
@@ -301,18 +315,18 @@ class _LangConfig:
         elif type in self.__langs[self.__default_locale][scope]:
             return self.__langs[self.__default_locale][scope][type]
         else:
-            raise ValueError(self.__langs[locale]["lang"]["error.type"].format(target=type, locale=locale, scope=scope))
+            raise ValueError(self.__langs[lc]["lang"]["error.type"].format(target=type, locale=lc, scope=scope))
 
     def set(self, scope: str, type: str, content: str, locale: str | None = None):
-        locale = locale or self.__locale
-        if locale not in self.__langs:
-            raise ValueError(self.__langs[self.__locale]["lang"]["error.locale"].format(target=locale))
+        lc = locale or self.__locale
+        if lc not in self.__langs:
+            raise ValueError(self.__langs[self.__locale]["lang"]["error.locale"].format(target=lc))
         if scope in self.__frozen:
             if self.__frozen[scope] is True:
-                raise ValueError(self.__langs[locale]["lang"]["frozen.scope"].format(target=scope))
+                raise ValueError(self.__langs[lc]["lang"]["frozen.scope"].format(target=scope))
             elif isinstance(frozens := self.__frozen[scope], list) and any(type.startswith(t) for t in frozens):
-                raise ValueError(self.__langs[locale]["lang"]["frozen.type"].format(target=type, scope=scope))
-        self.__langs[locale].setdefault(scope, {})[type] = content
+                raise ValueError(self.__langs[lc]["lang"]["frozen.type"].format(target=type, scope=scope))
+        self.__langs[lc].setdefault(scope, {})[type] = content
 
     def dispatch(self, scope: str) -> _LangScope:
         return _LangScope(scope)
