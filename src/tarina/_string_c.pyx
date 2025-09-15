@@ -2,7 +2,6 @@
 
 
 from cpython.dict cimport PyDict_Contains, PyDict_GetItem
-from cpython.int cimport PyInt_AS_LONG
 from cpython.list cimport PyList_Append, PyList_GET_ITEM, PyList_GET_SIZE, PyList_Insert
 from cpython.unicode cimport (
     PyUnicode_Concat,
@@ -34,12 +33,12 @@ def split(str text, str separator, bint crlf=True):
     text = str_strip(text, BOTHSTRIP, separator)
     cdef:
         bint escape = 0
-        list result = []
+        list[Py_UCS4] result = []
         Py_UCS4 quotation = 0
         Py_UCS4 ch = 0
         Py_ssize_t index = 0
         Py_ssize_t length = PyUnicode_GET_LENGTH(text)
-        list quoted_sep_index = []
+        list[int] quoted_sep_index = []
         Py_ssize_t last_sep_index = 0
         Py_ssize_t last_sep_pos = 0
         Py_ssize_t last_quote_index = 0
@@ -86,7 +85,7 @@ def split(str text, str separator, bint crlf=True):
         PyList_Insert(result, last_sep_pos, PyUnicode_READ_CHAR(text,  last_sep_index or last_quote_index))
         # result[first_quoted_sep_index] = '\1'
         while i < _len:
-            result[PyInt_AS_LONG(<object>PyList_GET_ITEM(quoted_sep_index, i))] = '\1'
+            result[<Py_ssize_t>PyList_GET_ITEM(quoted_sep_index, i)] = '\1'
             i += 1
     return PyUnicode_Split(PyUnicode_Join('', result), '\1', -1)
 
@@ -97,7 +96,7 @@ def split_once(str text, str separator, bint crlf=True):
     text = str_strip(text, LEFTSTRIP, separator)
     cdef:
         Py_ssize_t index = 0
-        list out_text = []
+        list[Py_UCS4] out_text = []
         Py_UCS4 quotation = 0
         Py_UCS4 ch = 0
         bint escape = 0

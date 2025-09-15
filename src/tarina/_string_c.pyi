@@ -1,4 +1,5 @@
-from typing import Iterable, Iterator, Self
+from typing import Iterator
+from typing_extensions import Self
 
 CRLF: str
 QUOTATION: dict[str, str]
