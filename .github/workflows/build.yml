@@ -39,7 +39,7 @@ jobs:
       - name: Build sdist
         run: |
           pipx run build --sdist
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: pkg-sdist
           path: dist/*.tar.gz
@@ -64,7 +64,7 @@ jobs:
         run: |
           export TARINA_NO_EXTENSIONS=1
           pipx run build --wheel
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: pkg-pure-wheel
           path: dist/*.whl
@@ -148,7 +148,7 @@ jobs:
         env:
           CIBW_SKIP: cp313t* cp314t* pp* ${{ matrix.musl == 'musllinux' && '*manylinux*' || '*musllinux*' }}
       - name: Upload wheels
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: github.event_name != 'pull_request'
         with:
           name: >-
