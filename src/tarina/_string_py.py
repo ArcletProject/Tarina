@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Iterator
 
 QUOTATION = {"'": "'", '"': '"'}
 CRLF = "\n\r"
@@ -159,6 +160,7 @@ def split(text: str, separator: str, crlf: bool = True):
     result, quotation, escape = [], "", False
     quoted_sep_index = []
     last_sep_index = 0
+    last_sep_pos = 0
     last_quote_index = 0
     index = 0
     for char in text:
@@ -179,21 +181,23 @@ def split(text: str, separator: str, crlf: bool = True):
                 result.append(char)
             else:
                 last_sep_index = index
+                last_sep_pos = len(result) + 1
                 if result and result[-1] != "\0":
                     result.append("\0")
+                quoted_sep_index = []
         else:
             result.append(char)
         escape = char == "\\"
     if not result:
         return []
     if quotation and quoted_sep_index:
-        result.insert(last_sep_index, text[last_quote_index or last_sep_index])
+        result.insert(last_sep_pos, text[last_sep_index or last_quote_index])
         for i in quoted_sep_index:
             result[i] = "\0"
     return str.join("", result).split("\0")
 
 
-class String:
+class String(Iterator[str]):
     left_index: int
     offset: int
     next_index: int
@@ -223,6 +227,11 @@ class String:
     def rest(self):
         return self.text[self.left_index :]
 
+    def reset(self):
+        self.left_index = 0
+        self.offset = 0
+        self.next_index = 0
+
     @property
     def complete(self):
         return self.left_index == self.len
@@ -236,3 +245,15 @@ class String:
 
     def __str__(self):
         return self.val()
+
+    def __iter__(self):
+        self.reset()
+        return self
+
+    def __next__(self):
+        if self.complete:
+            raise StopIteration
+        self.step(" ")
+        val = self.val()
+        self.apply()
+        return val

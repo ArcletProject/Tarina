@@ -143,6 +143,9 @@ def test_split():
     assert (split("123   456", " ")) == ["123", "456"]
 
     assert (split('" 123 456 "', " ")) == [" 123 456 "]  # 保留引号内空格
+    assert (split('''123 '45 6' "789 1" '12\'34' "56\"78" '90\\12' "34\\56" 'end test''', " ")) == [
+        "123", "45 6", "789 1", "12'34", '56"78', "90\\12", "34\\56", "'end", "test"
+    ]
 
 
 def test_string():
@@ -168,6 +171,11 @@ def test_string():
     assert s.will_complete
     s.apply()
     assert s.complete
+
+    s1 = String('''123 '45 6' "789 1" '12\'34' "56\"78" '90\\12' "34\\56" 'end test''')
+    assert [*s1] == [
+        "123", "'45 6'", '"789 1"', "'12'34'", '"56"78"', "'90\\12'", '"34\\56"', "'end", "test"
+    ]
 
 
 def test_lang():
@@ -208,6 +216,9 @@ def test_lang():
     lang.select("zh-CN")
     assert f"{Lang_.error.type}" == "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
     assert Lang_.error.type.cast() != "'{target}' 在 '{locale}:{scope}' 不是合法的类型"
+
+    lang.select("en-AUS")
+    assert lang.current == "en-US"  # fallback to en-US cause en-AUS not exists and en-UK is behind en-US
 
 
 def test_init_spec():
