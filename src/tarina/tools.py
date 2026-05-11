@@ -6,7 +6,6 @@ import re
 from collections.abc import AsyncGenerator, Awaitable, Coroutine, Generator, Iterable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, TypeVar, overload
-
 from typing_extensions import Concatenate, ParamSpec
 
 from .guard import is_async

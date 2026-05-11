@@ -23,7 +23,6 @@ from typing import (
     TypeVar,
     overload,
 )
-
 from typing_extensions import Self
 
 
@@ -759,12 +758,12 @@ class Trie(Generic[V]):
         # pylint: disable=protected-access
         dst._root.merge(src._root, overwrite=overwrite)
 
-    def copy(self, __make_copy: T_Copy = lambda x: x):
+    def copy(self, make_copy: T_Copy = lambda x: x, /):
         """Returns a shallow copy of the object."""
         # pylint: disable=protected-access
         cpy = self.__class__()
         cpy.__dict__ = self.__dict__.copy()
-        cpy._root = self._root.copy(__make_copy)
+        cpy._root = self._root.copy(make_copy)
         return cpy
 
     def __copy__(self):

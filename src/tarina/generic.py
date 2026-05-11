@@ -15,7 +15,6 @@ from typing import (
     Union,
     overload,
 )
-
 from typing_extensions import Literal as typing_ext_Literal
 from typing_extensions import get_args
 from typing_extensions import get_origin as typing_ext_get_origin

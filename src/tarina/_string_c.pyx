@@ -28,6 +28,16 @@ cdef dict QUOTATION = {'"': '"', "'": "'"}
 cdef unicode CRLF = "\n\r"
 
 def split(str text, str separator, bint crlf=True):
+    """尊重引号与转义的字符串切分
+
+    Args:
+        text (str): 要切割的字符串
+        separator (str): 切割符.
+        crlf (bool): 是否去除 \n 与 \r，默认为 True
+
+    Returns:
+        list[str]: 切割后的字符串, 可能含有空格
+    """
     if crlf:
         separator = PyUnicode_Concat(separator, CRLF)
     text = str_strip(text, BOTHSTRIP, separator)
@@ -91,6 +101,15 @@ def split(str text, str separator, bint crlf=True):
 
 
 def split_once(str text, str separator, bint crlf=True):
+    """尊重引号与转义的字符串切分, 只切割一次
+
+    Args:
+        text (str): 要切割的字符串
+        separator (str): 切割符.
+        crlf (bool): 是否去除 \n 与 \r，默认为 True
+    Returns:
+        tuple[str, str]: 切割后的字符串, 可能含有空格
+    """
     if crlf:
         separator = PyUnicode_Concat(separator, CRLF)
     text = str_strip(text, LEFTSTRIP, separator)
@@ -139,6 +158,15 @@ def split_once(str text, str separator, bint crlf=True):
 
 
 def split_once_without_escape(str text, str separator, bint crlf=True):
+    """尊重引号的字符串切分, 只切割一次
+
+    Args:
+        text (str): 要切割的字符串
+        separator (str): 切割符.
+        crlf (bool): 是否去除 \n 与 \r，默认为 True
+    Returns:
+        tuple[str, str]: 切割后的字符串, 可能含有空格
+    """
     if crlf:
         separator = PyUnicode_Concat(separator, CRLF)
     text = str_strip(text, LEFTSTRIP, separator)
@@ -172,6 +200,17 @@ def split_once_without_escape(str text, str separator, bint crlf=True):
 
 
 cpdef inline tuple split_once_index_only(str text, str separator, Py_ssize_t offset, bint crlf=True):
+    """尊重引号的字符串切分, 只切割一次
+
+    Args:
+        text (str): 要切割的字符串
+        separator (str): 切割符.
+        offset (int): 起始位置
+        crlf (bool): 是否去除 \n 与 \r，默认为 True
+
+    Returns:
+        tuple[str, str]: 切割后的字符串, 可能含有空格
+    """
     if crlf:
         separator = PyUnicode_Concat(separator, CRLF)
     cdef:

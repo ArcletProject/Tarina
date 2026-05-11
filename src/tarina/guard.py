@@ -4,7 +4,6 @@ import inspect
 from collections.abc import AsyncGenerator, Awaitable, Coroutine, Generator
 from functools import lru_cache
 from typing import Any, Callable
-
 from typing_extensions import TypeIs
 
 cache_size = 4096

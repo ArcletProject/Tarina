@@ -2,9 +2,7 @@ import pytest
 
 
 def test_generic_isinstance():
-    from typing import Any, Dict, List, Literal, TypedDict, TypeVar, Union
-
-    from typing_extensions import Annotated
+    from typing import Annotated, Any, Dict, List, Literal, TypedDict, TypeVar, Union  # noqa: UP035
 
     from tarina import generic_isinstance
 
@@ -13,7 +11,7 @@ def test_generic_isinstance():
     assert generic_isinstance(1, int)
     assert generic_isinstance(1, Union[str, int])
     assert generic_isinstance(123, Literal[123])
-    assert generic_isinstance([1], List[int])
+    assert generic_isinstance([1], List[int])  # noqa: UP006
     assert generic_isinstance([1], list[int])
     assert generic_isinstance(1, Annotated[int, lambda x: x > 0])
     assert generic_isinstance("a", S)
@@ -22,8 +20,8 @@ def test_generic_isinstance():
     assert generic_isinstance((1, "a"), tuple[int, str])
     assert generic_isinstance((1, 2, 3), tuple[int, ...])
     assert not generic_isinstance(bool, (str, list))
-    assert not generic_isinstance({123}, Dict[str, str])
-    assert not generic_isinstance([1], List[str])
+    assert not generic_isinstance({123}, Dict[str, str])  # noqa: UP006
+    assert not generic_isinstance([1], List[str])  # noqa: UP006
     assert not generic_isinstance({"a": 1}, dict[str, str])
     assert not generic_isinstance((1, 2), tuple[int, str])
     assert not generic_isinstance((1, "a"), tuple[int, str, str])
@@ -37,9 +35,7 @@ def test_generic_isinstance():
 
 
 def test_generic_issubclass():
-    from typing import Any, List, Literal, TypeVar, Union
-
-    from typing_extensions import Annotated
+    from typing import Annotated, Any, List, Literal, TypeVar, Union  # noqa: UP035
 
     from tarina import generic_issubclass
     from tarina.generic import is_optional
@@ -47,7 +43,7 @@ def test_generic_issubclass():
     S = TypeVar("S", bound=str)
     assert generic_issubclass(str, Any)
     assert generic_issubclass(int, Union[str, int])
-    assert generic_issubclass(List[int], List[int])
+    assert generic_issubclass(List[int], List[int])  # noqa: UP006
     assert generic_issubclass(int, Annotated[int, lambda x: x > 0])
     assert generic_issubclass(str, S)
     assert generic_issubclass(Literal["a"], Literal["a", "b"])
@@ -113,7 +109,7 @@ def test_split_once():
     assert split_once("123  ", " ") == ("123", "")
     assert split_once("123   456", " ") == ("123", "456")
 
-    assert split_once('" 123 456 "', " ") == (' 123 456 ', '') # 保留引号内空格
+    assert split_once('" 123 456 "', " ") == (" 123 456 ", "")  # 保留引号内空格
 
 
 def test_split():
@@ -143,8 +139,16 @@ def test_split():
     assert (split("123   456", " ")) == ["123", "456"]
 
     assert (split('" 123 456 "', " ")) == [" 123 456 "]  # 保留引号内空格
-    assert (split('''123 '45 6' "789 1" '12\'34' "56\"78" '90\\12' "34\\56" 'end test''', " ")) == [
-        "123", "45 6", "789 1", "12'34", '56"78', "90\\12", "34\\56", "'end", "test"
+    assert (split("""123 '45 6' "789 1" '12\'34' "56\"78" '90\\12' "34\\56" 'end test""", " ")) == [
+        "123",
+        "45 6",
+        "789 1",
+        "12'34",
+        '56"78',
+        "90\\12",
+        "34\\56",
+        "'end",
+        "test",
     ]
 
 
@@ -172,10 +176,8 @@ def test_string():
     s.apply()
     assert s.complete
 
-    s1 = String('''123 '45 6' "789 1" '12\'34' "56\"78" '90\\12' "34\\56" 'end test''')
-    assert [*s1] == [
-        "123", "'45 6'", '"789 1"', "'12'34'", '"56"78"', "'90\\12'", '"34\\56"', "'end", "test"
-    ]
+    s1 = String("""123 '45 6' "789 1" '12\'34' "56\"78" '90\\12' "34\\56" 'end test""")
+    assert [*s1] == ["123", "'45 6'", '"789 1"', "'12'34'", '"56"78"', "'90\\12'", '"34\\56"', "'end", "test"]
 
 
 def test_lang():

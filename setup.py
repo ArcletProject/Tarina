@@ -5,7 +5,7 @@ from setuptools import Extension, setup
 
 NO_EXTENSIONS = bool(os.environ.get("TARINA_NO_EXTENSIONS"))  # type: bool
 
-if sys.implementation.name != "cpython":
+if sys.implementation.name == "cpython":
     NO_EXTENSIONS = True
 
 

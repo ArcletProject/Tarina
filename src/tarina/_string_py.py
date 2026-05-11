@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Iterator
+
+from collections.abc import Iterator
 
 QUOTATION = {"'": "'", '"': '"'}
 CRLF = "\n\r"
@@ -14,7 +15,7 @@ def split_once(text: str, separator: str, crlf: bool = True):
         crlf (bool): 是否去除 \n 与 \r，默认为 True
 
     Returns:
-        Tuple[str, str]: 切割后的字符串, 可能含有空格
+        tuple[str, str]: 切割后的字符串, 可能含有空格
     """
     if crlf:
         separator += CRLF
@@ -64,7 +65,7 @@ def split_once_without_escape(text: str, separator: str, crlf: bool = True):
         crlf (bool): 是否去除 \n 与 \r，默认为 True
 
     Returns:
-        Tuple[str, str]: 切割后的字符串, 可能含有空格
+        tuple[str, str]: 切割后的字符串, 可能含有空格
     """
     if crlf:
         separator += CRLF
@@ -104,7 +105,7 @@ def split_once_index_only(text: str, separator: str, offset: int, crlf: bool = T
         crlf (bool): 是否去除 \n 与 \r，默认为 True
 
     Returns:
-        Tuple[str, str]: 切割后的字符串, 可能含有空格
+        tuple[str, str]: 切割后的字符串, 可能含有空格
     """
     if crlf:
         separator += CRLF
@@ -151,7 +152,7 @@ def split(text: str, separator: str, crlf: bool = True):
         crlf (bool): 是否去除 \n 与 \r，默认为 True
 
     Returns:
-        List[str]: 切割后的字符串, 可能含有空格
+        list[str]: 切割后的字符串, 可能含有空格
     """
     if crlf:
         separator += CRLF
@@ -168,7 +169,9 @@ def split(text: str, separator: str, crlf: bool = True):
         if char in QUOTATION:
             if index == 1 + escape + max(last_sep_index, last_quote_index) and not quotation:
                 quotation = QUOTATION[char]
-            elif (not result or index == tlen or text[index] in QUOTATION or text[index] in separator) and char == quotation:
+            elif (
+                not result or index == tlen or text[index] in QUOTATION or text[index] in separator
+            ) and char == quotation:
                 quotation = ""
                 last_quote_index = index
             else:

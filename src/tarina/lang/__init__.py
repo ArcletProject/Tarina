@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
 from typing import Callable, Final, Union, final
-
 from typing_extensions import Self
 
 root_dir: Final[Path] = Path(__file__).parent.parent / "i18n"
@@ -37,7 +36,14 @@ def _get_win_locale_with_ctypes() -> str | None:
     import ctypes
 
     kernel32 = ctypes.windll.kernel32
-    lcid: int = kernel32.GetUserDefaultUILanguage()
+    # Preferred modern API
+    buf = ctypes.create_unicode_buffer(85)
+
+    if kernel32.GetUserDefaultLocaleName(buf, len(buf)):
+        return buf.value.replace("-", "_")
+
+    # Fallback
+    lcid = kernel32.GetUserDefaultUILanguage()
     return locale.windows_locale.get(lcid)
 
 
@@ -46,8 +52,17 @@ def _get_win_locale_from_registry() -> str | None:
 
     with contextlib.suppress(Exception):
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\International") as key:
+            if lcname := winreg.QueryValueEx(key, "LocaleName")[0]:
+                return lcname
             if lcid := winreg.QueryValueEx(key, "Locale")[0]:
                 return locale.windows_locale.get(int(lcid, 16))
+
+
+def _get_posix_locale() -> str | None:
+    for key in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        if value := os.environ.get(key):
+            return value.split(".")[0]
+    return locale.getlocale(locale.LC_CTYPE)[0]
 
 
 if WINDOWS:
@@ -62,8 +77,7 @@ if WINDOWS:
 def get_locale() -> str | None:
     if WINDOWS:
         return _get_win_locale()
-
-    return locale.getlocale(locale.LC_MESSAGES)[0]  # type: ignore
+    return _get_posix_locale()
 
 
 def _get_config(root: Path) -> _LangConfigData:
