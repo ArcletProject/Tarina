@@ -152,13 +152,14 @@ def _get_lang(file: Path) -> Raw:
         data.pop("$schema", None)
         return data
     try:
-        import yaml
+        from ruamel import yaml
     except ImportError:
-        raise ImportError("PyYAML is required to load yaml file")
+        raise ImportError("ruamel-yaml is required to load yaml file")
+    reader = yaml.YAML(typ="safe", pure=True)
     with file.open("r", encoding="utf-8") as f:
-        data: Raw = yaml.safe_load(f)
-    data.pop("$schema", None)
-    return data
+        data1: Raw = reader.load(f)
+    data1.pop("$schema", None)
+    return data1
 
 
 def _get_scopes(root: Path) -> dict[str, dict[str, dict[str, str]]]:
