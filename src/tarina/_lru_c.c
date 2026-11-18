@@ -81,7 +81,7 @@ node_dealloc(Node* self)
     Py_DECREF(self->value);
     assert(self->prev == NULL);
     assert(self->next == NULL);
-    PyObject_Del((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject*
@@ -92,7 +92,7 @@ node_repr(Node* self)
 
 static PyTypeObject NodeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_lru_c.Node",              /* tp_name */
+    "_lru_c.Node",           /* tp_name */
     sizeof(Node),            /* tp_basicsize */
     0,                       /* tp_itemsize */
     (destructor)node_dealloc,/* tp_dealloc */
@@ -211,18 +211,19 @@ lru_delete_last(LRU *self)
         return;
 
     if (self->callback) {
-
         arglist = Py_BuildValue("OO", n->key, n->value);
+        lru_remove_node(self, n);
         result = PyObject_CallObject(self->callback, arglist);
         Py_XDECREF(result);
         Py_DECREF(arglist);
     }
-
-    lru_remove_node(self, n);
+    else {
+        lru_remove_node(self, n);
+    }
     PUT_NODE(self->dict, n->key, NULL);
 }
 
-static Py_ssize_t
+static inline Py_ssize_t
 lru_length(LRU *self)
 {
     return PyDict_Size(self->dict);
@@ -231,11 +232,9 @@ lru_length(LRU *self)
 static PyObject *
 LRU_contains_key(LRU *self, PyObject *key)
 {
-    if (PyDict_Contains(self->dict, key)) {
+    if (PyDict_Contains(self->dict, key))
         Py_RETURN_TRUE;
-    } else {
-        Py_RETURN_FALSE;
-    }
+    Py_RETURN_FALSE;
 }
 
 static PyObject *
@@ -277,13 +276,14 @@ lru_subscript(LRU *self, register PyObject *key)
 }
 
 static PyObject *
-LRU_get(LRU *self, PyObject *args)
+LRU_get(LRU *self, PyObject *args, PyObject *keywds)
 {
     PyObject *key;
-    PyObject *instead = NULL;
+    PyObject *default_obj = NULL;
     PyObject *result;
 
-    if (!PyArg_ParseTuple(args, "O|O", &key, &instead))
+    static char *kwlist[] = {"key", "default", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O|O", kwlist, &key, &default_obj))
         return NULL;
 
     result = lru_subscript(self, key);
@@ -291,12 +291,11 @@ LRU_get(LRU *self, PyObject *args)
     if (result)
         return result;
 
-    if (!instead) {
+    if (!default_obj)
         Py_RETURN_NONE;
-    }
 
-    Py_INCREF(instead);
-    return instead;
+    Py_INCREF(default_obj);
+    return default_obj;
 }
 
 static int
@@ -382,23 +381,23 @@ get_key(Node *node)
 static PyObject *
 LRU_update(LRU *self, PyObject *args, PyObject *kwargs)
 {
-	PyObject *key, *value;
-	PyObject *arg = NULL;
-	Py_ssize_t pos = 0;
+    PyObject *key, *value;
+    PyObject *arg = NULL;
+    Py_ssize_t pos = 0;
 
-	if ((PyArg_ParseTuple(args, "|O", &arg))) {
-		if (arg && PyDict_Check(arg)) {
-			while (PyDict_Next(arg, &pos, &key, &value))
-				lru_ass_sub(self, key, value);
-		}
-	}
+    if ((PyArg_ParseTuple(args, "|O", &arg))) {
+        if (arg && PyDict_Check(arg)) {
+            while (PyDict_Next(arg, &pos, &key, &value))
+                lru_ass_sub(self, key, value);
+        }
+    }
 
-	if (kwargs != NULL && PyDict_Check(kwargs)) {
-		while (PyDict_Next(kwargs, &pos, &key, &value))
-			lru_ass_sub(self, key, value);
-	}
+    if (kwargs != NULL && PyDict_Check(kwargs)) {
+        while (PyDict_Next(kwargs, &pos, &key, &value))
+            lru_ass_sub(self, key, value);
+    }
 
-	Py_RETURN_NONE;
+    Py_RETURN_NONE;
 }
 
 static PyObject *
@@ -427,13 +426,14 @@ LRU_setdefault(LRU *self, PyObject *args)
 }
 
 static PyObject *
-LRU_pop(LRU *self, PyObject *args)
+LRU_pop(LRU *self, PyObject *args, PyObject *keywds)
 {
     PyObject *key;
     PyObject *default_obj = NULL;
     PyObject *result;
 
-    if (!PyArg_ParseTuple(args, "O|O", &key, &default_obj))
+    static char *kwlist[] = {"key", "default", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O|O", kwlist, &key, &default_obj))
         return NULL;
 
     /* Trying to access the item by key. */
@@ -442,15 +442,12 @@ LRU_pop(LRU *self, PyObject *args)
     if (result)
         /* result != NULL, delete it from dict by key */
         lru_ass_sub(self, key, NULL);
-        return result;
-
-    if (!default_obj) {
-        Py_RETURN_NONE;
+    else if (default_obj) {
+        /* result == NULL, i.e. key missing, and default_obj given */
+        PyErr_Clear();
+        Py_INCREF(default_obj);
+        result = default_obj;
     }
-    /* result == NULL, i.e. key missing, and default_obj given */
-    PyErr_Clear();
-    Py_INCREF(default_obj);
-    result = default_obj;
     /* Otherwise (key missing, and default_obj not given [i.e. == NULL]), the
      * call to lru_subscript (at the location marked by "Trying to access the
      * item by key" in the comments) has already generated the appropriate
@@ -462,29 +459,17 @@ LRU_pop(LRU *self, PyObject *args)
 static PyObject *
 LRU_peek_first_item(LRU *self)
 {
-    if (self->first) {
-        PyObject *tuple = PyTuple_New(2);
-        Py_INCREF(self->first->key);
-        PyTuple_SET_ITEM(tuple, 0, self->first->key);
-        Py_INCREF(self->first->value);
-        PyTuple_SET_ITEM(tuple, 1, self->first->value);
-        return tuple;
-    }
-    else Py_RETURN_NONE;
+    if (self->first)
+        return Py_BuildValue("OO", self->first->key, self->first->value);
+    Py_RETURN_NONE;
 }
 
 static PyObject *
 LRU_peek_last_item(LRU *self)
 {
-    if (self->last) {
-        PyObject *tuple = PyTuple_New(2);
-        Py_INCREF(self->last->key);
-        PyTuple_SET_ITEM(tuple, 0, self->last->key);
-        Py_INCREF(self->last->value);
-        PyTuple_SET_ITEM(tuple, 1, self->last->value);
-        return tuple;
-    }
-    else Py_RETURN_NONE;
+    if (self->last)
+        return Py_BuildValue("OO", self->last->key, self->last->value);
+    Py_RETURN_NONE;
 }
 
 static PyObject *
@@ -610,6 +595,13 @@ LRU_get_stats(LRU *self)
 }
 
 
+static PyObject *
+LRU_class_getitem(PyObject *cls, PyObject *arg)
+{
+    return Py_GenericAlias(cls, arg);
+}
+
+
 /* Hack to implement "key in lru" */
 static PySequenceMethods lru_as_sequence = {
     0,                             /* sq_length */
@@ -633,18 +625,18 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.values() -> list of L's values in MRU order")},
     {"items", (PyCFunction)LRU_items, METH_NOARGS,
                     PyDoc_STR("L.items() -> list of L's items (key,value) in MRU order")},
-    {"has_key",	(PyCFunction)LRU_contains, METH_VARARGS,
+    {"has_key", (PyCFunction)LRU_contains, METH_VARARGS,
                     PyDoc_STR("L.has_key(key) -> Check if key is there in L")},
-    {"get",	(PyCFunction)LRU_get, METH_VARARGS,
-                    PyDoc_STR("L.get(key[, instead]) -> If L has key return its value, otherwise instead")},
+    {"get", (PyCFunction)LRU_get, METH_VARARGS | METH_KEYWORDS,
+                    PyDoc_STR("L.get(key, default=None) -> If L has key return its value, otherwise default")},
     {"setdefault", (PyCFunction)LRU_setdefault, METH_VARARGS,
                     PyDoc_STR("L.setdefault(key, default=None) -> If L has key return its value, otherwise insert key with a value of default and return default")},
-    {"pop", (PyCFunction)LRU_pop, METH_VARARGS,
+    {"pop", (PyCFunction)LRU_pop, METH_VARARGS | METH_KEYWORDS,
                     PyDoc_STR("L.pop(key[, default]) -> If L has key return its value and remove it from L, otherwise return default. If default is not given and key is not in L, a KeyError is raised.")},
     {"popitem", (PyCFunction)LRU_popitem, METH_VARARGS | METH_KEYWORDS,
                     PyDoc_STR("L.popitem([least_recent=True]) -> Returns and removes a (key, value) pair. The pair returned is the least-recently used if least_recent is true, or the most-recently used if false.")},
     {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
-                    PyDoc_STR("L.set_size(size) -> set size of LRU")},
+                    PyDoc_STR("L.set_size() -> set size of LRU")},
     {"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
                     PyDoc_STR("L.get_size() -> get size of LRU")},
     {"clear", (PyCFunction)LRU_clear, METH_NOARGS,
@@ -659,7 +651,8 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.update() -> update value for key in LRU")},
     {"set_callback", (PyCFunction)LRU_set_callback, METH_VARARGS,
                     PyDoc_STR("L.set_callback(callback) -> set a callback to call when an item is evicted.")},
-    {NULL,	NULL},
+    {"__class_getitem__", (PyCFunction)LRU_class_getitem, METH_O | METH_CLASS, NULL},
+    {NULL,  NULL},
 };
 
 static PyObject*
@@ -703,10 +696,10 @@ LRU_dealloc(LRU *self)
 {
     if (self->dict) {
         LRU_clear(self);
-        Py_DECREF(self->dict);
+        Py_CLEAR(self->dict);
         Py_XDECREF(self->callback);
     }
-    PyObject_Del((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 PyDoc_STRVAR(lru_doc,
@@ -726,7 +719,7 @@ PyDoc_STRVAR(lru_doc,
 
 static PyTypeObject LRUType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_lru_c.LRU",               /* tp_name */
+    "_lru_c.LRU",            /* tp_name */
     sizeof(LRU),             /* tp_basicsize */
     0,                       /* tp_itemsize */
     (destructor)LRU_dealloc, /* tp_dealloc */
@@ -744,7 +737,7 @@ static PyTypeObject LRUType = {
     0,                       /* tp_getattro */
     0,                       /* tp_setattro */
     0,                       /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,      /* tp_flags */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,      /* tp_flags */
     lru_doc,                 /* tp_doc */
     0,                       /* tp_traverse */
     0,                       /* tp_clear */
@@ -762,13 +755,13 @@ static PyTypeObject LRUType = {
     0,                       /* tp_dictoffset */
     (initproc)LRU_init,      /* tp_init */
     0,                       /* tp_alloc */
-    0,                       /* tp_new */
+    PyType_GenericNew,       /* tp_new */
 };
 
 #if PY_MAJOR_VERSION >= 3
   static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    "_lru_c",            /* m_name */
+    "_lru_c",         /* m_name */
     lru_doc,          /* m_doc */
     -1,               /* m_size */
     NULL,             /* m_methods */
@@ -784,11 +777,11 @@ moduleinit(void)
 {
     PyObject *m;
 
-    NodeType.tp_new = PyType_GenericNew;
+    LRUType.tp_base = &PyBaseObject_Type;
+
     if (PyType_Ready(&NodeType) < 0)
         return NULL;
 
-    LRUType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&LRUType) < 0)
         return NULL;
 

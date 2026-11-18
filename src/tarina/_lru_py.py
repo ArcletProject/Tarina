@@ -2,11 +2,17 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from collections.abc import Hashable, Iterable
-from typing import Any, Callable, Generic, TypeVar, overload
+from typing import Any, Callable, Generic, Protocol, TypeVar, overload
 
 _KT = TypeVar("_KT", bound=Hashable)
 _VT = TypeVar("_VT")
+_VT_co = TypeVar("_VT_co", covariant=True)
 _T = TypeVar("_T")
+
+
+class __SupportsKeysAndGetItem(Protocol[_KT, _VT_co]):
+    def keys(self) -> Iterable[_KT]: ...
+    def __getitem__(self, key: _KT, /) -> _VT_co: ...
 
 
 class LRU(Generic[_KT, _VT]):
@@ -93,6 +99,9 @@ class LRU(Generic[_KT, _VT]):
                     self.__callback(k, v)
 
     @overload
+    def update(self, m: __SupportsKeysAndGetItem[_KT, _VT], /, **kwargs: _VT) -> None: ...
+
+    @overload
     def update(self, m: Iterable[tuple[_KT, _VT]], /, **kwargs: _VT) -> None: ...
 
     @overload
@@ -102,6 +111,9 @@ class LRU(Generic[_KT, _VT]):
         self.__cache.update(*args, **kwargs)
 
     __contains__ = has_key
+
+    def get_state(self):
+        raise NotImplementError
 
     def __delitem__(self, key: _KT) -> None:
         self.__cache.pop(key)
