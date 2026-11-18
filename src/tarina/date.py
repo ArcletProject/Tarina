@@ -1,6 +1,5 @@
 import re
-from datetime import datetime, timedelta, timezone
-from typing import Union
+from datetime import UTC, datetime, timedelta
 
 MILLI_SECOND = 1
 SECOND = MILLI_SECOND * 1000
@@ -33,7 +32,7 @@ def get_total_seconds(delta: datetime):
 
 
 class DateParser:
-    timezone_offset = get_total_seconds(datetime.now(timezone.utc).astimezone())
+    timezone_offset = get_total_seconds(datetime.now(UTC).astimezone())
 
     @classmethod
     def set_timezone_offset(cls, offset: float):
@@ -44,7 +43,7 @@ class DateParser:
         return cls.timezone_offset
 
     @classmethod
-    def get_date_number(cls, date: Union[float, datetime, None] = None, offset: Union[float, None] = None):
+    def get_date_number(cls, date: float | datetime | None = None, offset: float | None = None):
         if date is None:
             date = datetime.now()
         if isinstance(date, float):
@@ -54,7 +53,7 @@ class DateParser:
         return int((date.timestamp() / MINUTE - offset) / 1440)  # type: ignore
 
     @classmethod
-    def from_date_number(cls, value: float, offset: Union[float, None] = None):
+    def from_date_number(cls, value: float, offset: float | None = None):
         date = datetime.fromtimestamp(value * DAY)
         if offset is None:
             offset = cls.timezone_offset
@@ -95,7 +94,7 @@ class DateParser:
         return str(source).zfill(length)
 
     @classmethod
-    def template(cls, template: str, time: Union[datetime, None] = None):
+    def template(cls, template: str, time: datetime | None = None):
         if time is None:
             time = datetime.now()
         return (

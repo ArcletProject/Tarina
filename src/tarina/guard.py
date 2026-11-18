@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import AsyncGenerator, Awaitable, Coroutine, Generator
+from collections.abc import AsyncGenerator, Awaitable, Callable, Coroutine, Generator
 from functools import lru_cache
-from typing import Any, Callable
+from typing import Any
 from typing_extensions import TypeIs
 
 cache_size = 4096

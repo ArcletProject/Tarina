@@ -13,11 +13,11 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
+    get_args,
     overload,
 )
-from typing_extensions import Literal as typing_ext_Literal
-from typing_extensions import get_args
-from typing_extensions import get_origin as typing_ext_get_origin
+from typing import Literal as typing_ext_Literal
+from typing import get_origin as typing_ext_get_origin
 
 Unions = (Union, types.UnionType) if sys.version_info >= (3, 10) else (Union,)  # pragma: no cover
 _TypedDictMeta = type(TypedDict.__mro_entries__(...)[0])  # type: ignore

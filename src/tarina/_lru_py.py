@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from collections.abc import Hashable, Iterable
-from typing import Any, Callable, Generic, Protocol, TypeVar, overload
+from collections.abc import Callable, Hashable, Iterable
+from typing import Any, Generic, Protocol, TypeVar, overload
 
 _KT = TypeVar("_KT", bound=Hashable)
 _VT = TypeVar("_VT")
@@ -113,7 +113,7 @@ class LRU(Generic[_KT, _VT]):
     __contains__ = has_key
 
     def get_state(self):
-        raise NotImplementError
+        raise NotImplementedError
 
     def __delitem__(self, key: _KT) -> None:
         self.__cache.pop(key)

@@ -130,15 +130,13 @@ def init(*_):
     with template_schema.open("w+") as f:
         f.write(TEMPLATE_SCHEMA)
 
-    print(  # noqa: T201
-        f"""\
+    print(f"""\
 files created:
 - {config_file}
 - {template_file}
 
 please edit the files to fit your needs
-    """
-    )
+    """)  # noqa: T201
 
 
 def default(args):

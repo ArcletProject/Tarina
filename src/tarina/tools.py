@@ -3,10 +3,10 @@ from __future__ import annotations
 import asyncio
 import inspect
 import re
-from collections.abc import AsyncGenerator, Awaitable, Coroutine, Generator, Iterable
+from collections.abc import AsyncGenerator, Awaitable, Callable, Coroutine, Generator, Iterable
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, TypeVar, overload
-from typing_extensions import Concatenate, ParamSpec
+from typing import TYPE_CHECKING, Any, Concatenate, Literal, Protocol, TypeVar, overload
+from typing_extensions import ParamSpec
 
 from .guard import is_async
 

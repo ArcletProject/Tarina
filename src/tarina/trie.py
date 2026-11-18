@@ -12,20 +12,18 @@ import copy as _copy
 import enum
 import os
 import sys
-from collections.abc import Generator, Iterable, Iterator, Mapping, MutableMapping
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, MutableMapping
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Final,
     Generic,
     Literal,
-    Optional,
     Protocol,
+    Self,
     TypeVar,
     overload,
 )
-from typing_extensions import Self
 
 NO_EXTENSIONS = bool(os.environ.get("TARINA_NO_EXTENSIONS"))  # type: bool
 if sys.implementation.name != "cpython":
@@ -43,7 +41,6 @@ T_Copy = Callable[[T], T]
 
 
 class Children(Protocol[_VT]):
-
     def __bool__(self) -> bool: ...
     def __len__(self) -> int: ...
 
@@ -253,7 +250,7 @@ NodeFactory = Callable[
         Callable[[tuple[str, ...]], str],
         tuple[str, ...],
         Generator["_Node[T]", None, None],
-        Optional[T],
+        T | None,
     ],
     "_Node[T]",
 ]

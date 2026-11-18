@@ -6,11 +6,11 @@ import json
 import locale
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Final, Union, final
-from typing_extensions import Self
+from typing import Final, Self, final
 
 root_dir: Final[Path] = Path(__file__).parent.parent / "i18n"
 WINDOWS = sys.platform.startswith("win") or (sys.platform == "cli" and os.name == "nt")
@@ -92,7 +92,7 @@ def _get_config(root: Path) -> _LangConfigData:
         return _LangConfigData(**data)
 
 
-Types = Union[str, dict[str, "Types"]]
+Types = str | dict[str, "Types"]
 Raw = dict[str, dict[str, Types]]
 
 

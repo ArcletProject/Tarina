@@ -3,8 +3,8 @@ from __future__ import annotations
 import functools
 import inspect
 import sys
-from collections.abc import Mapping
-from typing import Any, Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 
 
 @functools.lru_cache(4096)

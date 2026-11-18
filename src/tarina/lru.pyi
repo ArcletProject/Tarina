@@ -1,16 +1,14 @@
-from collections.abc import Hashable, Iterable
-from typing import Any, Callable, Generic, Protocol, TypeVar, overload
+from collections.abc import Callable, Hashable, Iterable
+from typing import Any, Generic, Protocol, TypeVar, overload
 
 _KT = TypeVar("_KT", bound=Hashable)
 _VT = TypeVar("_VT")
 _VT_co = TypeVar("_VT_co", covariant=True)
 _T = TypeVar("_T")
 
-
 class __SupportsKeysAndGetItem(Protocol[_KT, _VT_co]):
     def keys(self) -> Iterable[_KT]: ...
     def __getitem__(self, key: _KT, /) -> _VT_co: ...
-
 
 class LRU(Generic[_KT, _VT]):
     @overload

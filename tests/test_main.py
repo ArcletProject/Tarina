@@ -9,7 +9,7 @@ def test_generic_isinstance():
     S = TypeVar("S", bound=str)
     assert generic_isinstance("a", Any)
     assert generic_isinstance(1, int)
-    assert generic_isinstance(1, Union[str, int])
+    assert generic_isinstance(1, Union[str, int])  # noqa: UP007
     assert generic_isinstance(123, Literal[123])
     assert generic_isinstance([1], List[int])  # noqa: UP006
     assert generic_isinstance([1], list[int])
@@ -42,13 +42,13 @@ def test_generic_issubclass():
 
     S = TypeVar("S", bound=str)
     assert generic_issubclass(str, Any)
-    assert generic_issubclass(int, Union[str, int])
+    assert generic_issubclass(int, Union[str, int])  # noqa: UP007
     assert generic_issubclass(List[int], List[int])  # noqa: UP006
     assert generic_issubclass(int, Annotated[int, lambda x: x > 0])
     assert generic_issubclass(str, S)
     assert generic_issubclass(Literal["a"], Literal["a", "b"])
 
-    assert is_optional(Union[str, None], str)
+    assert is_optional(Union[str, None], str)  # noqa: UP007
 
 
 def test_lru():

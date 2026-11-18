@@ -1,7 +1,7 @@
 import keyword
 import re
 from pathlib import Path
-from typing import Optional, cast
+from typing import cast
 
 from tarina.lang import lang
 from tarina.lang.schema import _Subtypes, _TemplateDict, get_template
@@ -13,10 +13,10 @@ class LangItem:
         self.scope = scope
         self.type = type
 
-    def set(self, content: str, locale: Optional[str] = None):
+    def set(self, content: str, locale: str | None = None):
         lang.set(self.scope, self.type, content, locale)
 
-    def __call__(self, locale: Optional[str] = None, **format_kwargs):
+    def __call__(self, locale: str | None = None, **format_kwargs):
         return lang.require(self.scope, self.type, locale).format(**format_kwargs)
 
     def __iter__(self):
