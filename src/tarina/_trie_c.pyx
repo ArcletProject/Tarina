@@ -1,4 +1,4 @@
-# cython: language_level=3, boundscheck=False, cdivision=True, wraparound=False, initializedcheck=False, infer_types=True, binding=True
+# cython: language_level=3, boundscheck=False, cdivision=True, wraparound=False, initializedcheck=False, infer_types=True, binding=True, freethreading_compatible=True
 """Cython 加速的 Trie 完整实现(参照 _string_c.pyx 的加速模式).
 
 与 ``tarina.trie`` 全量 API 对齐(merge/copy/deepcopy/pickle/traverse/

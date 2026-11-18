@@ -136,3 +136,4 @@ dmypy.json
 
 # Compiled cython files
 src/tarina/_string_c.c
+src/tarina/_trie_c.c

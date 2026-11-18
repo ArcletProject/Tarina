@@ -48,9 +48,6 @@ ignore = ["E402", "F403", "F405", "C901", "UP037", "T201"]
 force-sort-within-sections = false
 extra-standard-library = ["typing_extensions"]
 
-
-
-
 [tool.pdm]
 [tool.pdm.scripts]
 test = "pytest -v -W ignore"

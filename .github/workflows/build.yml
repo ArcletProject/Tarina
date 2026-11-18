@@ -74,7 +74,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-14]
+        os:
+          - ubuntu-latest,
+          - ubuntu-24.04-arm,
+          - windows-latest,
+          - windows-11-arm,
+          - macos-15-intel,
+          - macos-15
         qemu: [ '' ]
         musl: [ "" ]
         include:
@@ -118,6 +124,8 @@ jobs:
         id: qemu
       - name: Set up Python
         uses: actions/setup-python@v7
+        with:
+          python-version: 3.13
       - name: Install cython
         uses: py-actions/py-dependency-install@v4
         with:
@@ -125,12 +133,21 @@ jobs:
       - name: Cythonize
         run: |
           make cythonize
-      - name: Ensure Macos 13
+      # - name: Ensure Macos 13
+      #   run: |
+      #     if [[ "${{ matrix.os }}" -eq "macos-13" ]]; then
+      #       echo "CIBW_ARCHS_MACOS=x86_64 universal2" >> $GITHUB_ENV
+      #     else
+      #       echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
+      #     fi
+      #   shell: bash
+      - name: Configure macOS architecture
+        if: runner.os == 'macOS'
         run: |
-          if [[ "${{ matrix.os }}" -eq "macos-13" ]]; then
-            echo "CIBW_ARCHS_MACOS=x86_64 universal2" >> $GITHUB_ENV
-          else
+          if [[ "${{ runner.arch}}" == "ARM64" ]]; then
             echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
+          else
+            echo "CIBW_ARCHS_MACOS=x86_64" >> $GITHUB_ENV
           fi
         shell: bash
       - name: Prepare emulation
@@ -146,7 +163,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.3.5
         env:
-          CIBW_SKIP: cp313t* cp314t* pp* ${{ matrix.musl == 'musllinux' && '*manylinux*' || '*musllinux*' }}
+          CIBW_SKIP: pp* ${{ matrix.musl == 'musllinux' && '*manylinux*' || '*musllinux*' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v7
         if: github.event_name != 'pull_request'

@@ -1,4 +1,4 @@
-# cython: language_level=3, boundscheck=False, cdivision=True, wraparound=False, initializedcheck=False, infer_types=True, binding=True
+# cython: language_level=3, boundscheck=False, cdivision=True, wraparound=False, initializedcheck=False, infer_types=True, binding=True, freethreading_compatible=True
 
 
 from cpython.dict cimport PyDict_Contains, PyDict_GetItem
