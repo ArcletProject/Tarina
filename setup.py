@@ -12,6 +12,7 @@ if sys.implementation.name != "cpython":
 extensions = [
     Extension("tarina._string_c", ["src/tarina/_string_c.c"]),
     Extension("tarina._lru_c", ["src/tarina/_lru_c.c"]),
+    Extension("tarina._trie_c", ["src/tarina/_trie_c.c"]),
 ]
 
 args = {
