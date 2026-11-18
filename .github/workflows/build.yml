@@ -20,8 +20,8 @@ permissions:
   contents: read
 
 jobs:
-  build_sdist:
-    name: Build sdist
+  build:
+    name: Build sdist and pure wheel
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -29,42 +29,29 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: 3.13
-      - name: Install dependencies
-        uses: py-actions/py-dependency-install@v4
-        with:
-          path: requirements/cython.txt
+      - name: Ensure PDM
+        run: |
+          python3 -m pip install pdm
+      - name: Install Package
+        run: |
+          pdm sync -G:all --no-self
       - name: Cythonize
         run: |
-          make cythonize
+          pdm run make
       - name: Build sdist
         run: |
           pipx run build --sdist
-      - uses: actions/upload-artifact@v7
+      - name: Upload sdist
+        uses: actions/upload-artifact@v7
         with:
           name: pkg-sdist
           path: dist/*.tar.gz
-
-  build_pure_wheel:
-    name: Build pure wheel
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v7
-        with:
-          python-version: 3.13
-      - name: Install dependencies
-        uses: py-actions/py-dependency-install@v4
-        with:
-          path: requirements/cython.txt
-      - name: Cythonize
-        run: |
-          make cythonize
-      - name: Build wheel
+      - name: Build pure wheel
         run: |
           export TARINA_NO_EXTENSIONS=1
           pipx run build --wheel
-      - uses: actions/upload-artifact@v7
+      - name: Upload pure wheel
+        uses: actions/upload-artifact@v7
         with:
           name: pkg-pure-wheel
           path: dist/*.whl
@@ -126,21 +113,15 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: 3.13
-      - name: Install cython
-        uses: py-actions/py-dependency-install@v4
-        with:
-          path: requirements/cython.txt
+      - name: Ensure PDM
+        run: |
+          python3 -m pip install pdm
+      - name: Install Package
+        run: |
+          pdm sync -G:all --no-self
       - name: Cythonize
         run: |
-          make cythonize
-      # - name: Ensure Macos 13
-      #   run: |
-      #     if [[ "${{ matrix.os }}" -eq "macos-13" ]]; then
-      #       echo "CIBW_ARCHS_MACOS=x86_64 universal2" >> $GITHUB_ENV
-      #     else
-      #       echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
-      #     fi
-      #   shell: bash
+          pdm run make
       - name: Configure macOS architecture
         if: runner.os == 'macOS'
         run: |
@@ -180,7 +161,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
-    needs: [build_sdist, build_pure_wheel, build_wheels]
+    needs: [build, build_wheels]
     permissions:
       contents: write
       packages: write
