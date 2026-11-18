@@ -10,7 +10,9 @@ __copyright__ = "Copyright 2014 Google Inc."
 
 import copy as _copy
 import enum
-from collections.abc import Generator, Iterable, Iterator, MutableMapping
+import os
+import sys
+from collections.abc import Generator, Iterable, Iterator, Mapping, MutableMapping
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -24,6 +26,10 @@ from typing import (
     overload,
 )
 from typing_extensions import Self
+
+NO_EXTENSIONS = bool(os.environ.get("TARINA_NO_EXTENSIONS"))  # type: bool
+if sys.implementation.name != "cpython":
+    NO_EXTENSIONS = True
 
 
 class ShortKeyError(KeyError):
@@ -233,6 +239,12 @@ class _SentinelClass(enum.Enum):
     _Sentinel = object()
 
 
+# Reused as the "iterator exhausted" marker in _Node.iterate and _Node.equals.
+# It is cheaper than try/except StopIteration control flow and can never be
+# confused with yielded (step, node) pairs or keys.
+_ITER_DONE: Final = _SentinelClass._Sentinel
+
+
 T_Iteritems = Callable[[Children[T]], Iterable[tuple[str, "_Node[T]"]]]
 
 PathConv = Callable[[tuple[str, ...]], str]
@@ -308,15 +320,16 @@ class _Node(Generic[V]):
                 path.append("")
 
             while True:
-                try:
-                    step, node = next(stack[-1])
-                    path[-1] = step
-                    break
-                except StopIteration:
+                if not stack:
+                    return
+                step_node = next(stack[-1], _ITER_DONE)
+                if step_node is _ITER_DONE:
                     stack.pop()
                     path.pop()
-                except IndexError:
-                    return
+                    continue
+                step, node = step_node
+                path[-1] = step
+                break
 
     def traverse(
         self,
@@ -376,16 +389,17 @@ class _Node(Generic[V]):
                 stack.append((iter(a.children.items()), b.children))
 
             while True:
-                try:
-                    key, a = next(stack[-1][0])
-                    b = stack[-1][1][key]
-                    break
-                except StopIteration:
-                    stack.pop()
-                except IndexError:
+                if not stack:
                     return True
-                except KeyError:
+                entry = next(stack[-1][0], _ITER_DONE)
+                if entry is _ITER_DONE:
+                    stack.pop()
+                    continue
+                key, a = entry
+                b = stack[-1][1].get(key)
+                if b is None:
                     return False
+                break
 
     def __bool__(self):
         raise NotImplementedError()
@@ -701,10 +715,6 @@ class Trie(Generic[V]):
         **kwargs: V,
     ):
         """Updates stored values.  Works like :meth:`dict.update`."""
-        if other and isinstance(other, MutableMapping):
-            for key, value in self.iteritems(other):  # type: ignore
-                self[key] = value
-            other = ()
         MutableMapping.update(self, other or (), **kwargs)  # type: ignore
 
     def merge(self, other: Trie[V], overwrite: bool = False):
@@ -828,6 +838,31 @@ class Trie(Generic[V]):
             trace.append((step, node))
         return node, trace
 
+    def _find_node(self, key: str | Literal[_SentinelClass._Sentinel]) -> _Node[V]:
+        """Returns node for given key without building a trace.
+
+        This is a read-only fast path of :meth:`_get_node` for callers that
+        do not need the path to the node (no ``(step, node)`` tuple
+        allocation per level).
+
+        Args:
+            key: A key to look for.
+
+        Returns:
+            The node for given key.
+
+        Raises:
+            KeyError: If there is no node for the key.
+        """
+        node: _Node[V] = self._root
+        for step in self.__path_from_key(key):
+            # pylint thinks node.children is always _NoChildren and thus that
+            # we're assigning None here; pylint: disable=assignment-from-none
+            if (_node := node.children.get(step)) is None:
+                raise KeyError(key)
+            node = _node
+        return node
+
     def _set_node(self, key: str, value: V, only_if_missing: bool = False) -> _Node[V]:
         """Sets value for a given key.
 
@@ -914,9 +949,12 @@ class Trie(Generic[V]):
         Raises:
             KeyError: If ``prefix`` does not match any node.
         """
-        node, _ = self._get_node(prefix)
-        for path, value in node.iterate(list(self.__path_from_key(prefix)), shallow, self._items_callback):
-            yield (self._key_from_path(path), value)
+        node, trace = self._get_node(prefix)
+        # Reuse the path walked by _get_node instead of parsing the prefix
+        # key a second time.
+        path = [step for step, _ in trace[1:]]
+        for p, value in node.iterate(path, shallow, self._items_callback):
+            yield (self._key_from_path(p), value)
 
     def iterkeys(
         self, prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel, shallow: bool = False
@@ -959,8 +997,11 @@ class Trie(Generic[V]):
         Raises:
             KeyError: If ``prefix`` does not match any node.
         """
-        node, _ = self._get_node(prefix)
-        for _, value in node.iterate(list(self.__path_from_key(prefix)), shallow, self._items_callback):
+        node, trace = self._get_node(prefix)
+        # Reuse the path walked by _get_node instead of parsing the prefix
+        # key a second time.
+        path = [step for step, _ in trace[1:]]
+        for _, value in node.iterate(path, shallow, self._items_callback):
             yield value
 
     def items(self, prefix: str | Literal[_SentinelClass._Sentinel] = _SentinelClass._Sentinel, shallow: bool = False):
@@ -1047,7 +1088,7 @@ class Trie(Generic[V]):
             it has a value associated with it and whether it has a subtrie.
         """
         try:
-            node, _ = self._get_node(key)
+            node = self._find_node(key)
         except KeyError:
             return 0
         return (self.HAS_VALUE * (node.value is not _SentinelClass._Sentinel)) | (
@@ -1060,6 +1101,23 @@ class Trie(Generic[V]):
         See :func:`Trie.has_node` for more detailed documentation.
         """
         return bool(self.has_node(key) & self.HAS_VALUE)
+
+    def __contains__(self, key: str):
+        """Dict-style membership test.
+
+        Without a custom ``__contains__``, ``in`` falls back to iterating the
+        whole trie (``__iter__``), which is ``O(n)`` per lookup.  Delegating to
+        :func:`Trie.has_key` keeps the ``in`` operator as fast as
+        :func:`Trie.has_key`.
+
+        >>> import tarina.trie
+        >>> trie = tarina.trie.StringTrie({"foo/bar": 1})
+        >>> "foo/bar" in trie
+        True
+        >>> "foo" in trie
+        False
+        """
+        return self.has_key(key)
 
     def has_subtrie(self, key: str):
         """Returns whether given key is a prefix of another key in the trie.
@@ -1149,7 +1207,7 @@ class Trie(Generic[V]):
             return self.itervalues(start)
         if TYPE_CHECKING:
             assert isinstance(key_or_slice, str)
-        node, _ = self._get_node(key_or_slice)
+        node = self._find_node(key_or_slice)
         if node.value is _SentinelClass._Sentinel:
             raise ShortKeyError(key_or_slice)
         return node.value
@@ -1794,6 +1852,14 @@ class Trie(Generic[V]):
     # traverse.uses_bool_convertible_children = True
 
 
+# Trie provides the full Mapping interface (with ``MutableMapping.update``
+# invoked explicitly) but only subclasses ``Generic``, so ABCs would not see
+# it through MRO.  ``Mapping.__subclasshook__`` is gated to ``Collection`` and
+# does no duck-typing, hence the explicit virtual-subclass registration.
+# Registration covers CharTrie/StringTrie too, via their MRO.
+Mapping.register(Trie)
+
+
 class CharTrie(Trie[V]):
     """A variant of a :class:`tarina.trie.Trie` which accepts strings as keys.
 
@@ -1926,6 +1992,14 @@ class StringTrie(Trie[V]):
     def _key_from_path(self, path: Iterable[str]):
         return self._separator.join(path)
 
+
+if not NO_EXTENSIONS:  # pragma: no branch
+    try:
+        from ._trie_c import CharTrie as CharTrie  # type: ignore[misc]
+        from ._trie_c import StringTrie as StringTrie  # type: ignore[misc]
+        from ._trie_c import Trie as Trie  # type: ignore[misc]
+    except ImportError:  # pragma: no cover
+        pass
 
 if __name__ == "__main__":
     trie = CharTrie[int]()
