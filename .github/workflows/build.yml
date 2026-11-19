@@ -57,54 +57,114 @@ jobs:
           path: dist/*.whl
 
   build_wheels:
-    name: Build wheels on ${{ matrix.os }} ${{ matrix.qemu }} ${{ matrix.musl }}
-    runs-on: ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
-        os:
-          - ubuntu-latest,
-          - ubuntu-24.04-arm,
-          - windows-latest,
-          - windows-11-arm,
-          - macos-15-intel,
-          - macos-15
-        qemu: [ '' ]
-        musl: [ "" ]
         include:
+          - name: linux-x86_64
+            runs-on: ubuntu-latest
+            qemu: ""
+            musl: ""
+          - name: linux-aarch64
+            runs-on: ubuntu-24.04-arm
+            qemu: ""
+            musl: ""
+          - name: linux-musllinux-x86_64
+            runs-on: ubuntu-latest
+            qemu: ""
+            musl: musllinux
+          - name: linux-musllinux-aarch64
+            runs-on: ubuntu-24.04-arm
+            qemu: ""
+            musl: musllinux
+          - name: windows-x86_64
+            runs-on: windows-latest
+            qemu: ""
+            musl: ""
+          - name: windows-arm64
+            runs-on: windows-11-arm
+            qemu: ""
+            musl: ""
+          - name: macos-x86_64
+            runs-on: macos-15-intel
+            qemu: ""
+            musl: ""
+          - name: macos-arm64
+            runs-on: macos-15
+            qemu: ""
+            musl: ""
           # Split ubuntu/musl jobs for the sake of speed-up
-          - os: ubuntu-latest
+          - name: linux-ppc64le
+            runs-on: ubuntu-latest
             qemu: ppc64le
             musl: ""
-          - os: ubuntu-latest
+          - name: linux-armv7l
+            runs-on: ubuntu-latest
             qemu: armv7l
             musl: ""
-          - os: ubuntu-latest
+          - name: linux-s390x
+            runs-on: ubuntu-latest
             qemu: s390x
             musl: ""
-          - os: ubuntu-latest
+          - name: linux-riscv64
+            runs-on: ubuntu-latest
             qemu: riscv64
             musl: ""
-          - os: ubuntu-latest
+          - name: linux-musllinux-riscv64
+            runs-on: ubuntu-latest
             qemu: riscv64
             musl: musllinux
-          - os: ubuntu-latest
+          - name: linux-musllinux-s390x
+            runs-on: ubuntu-latest
             qemu: s390x
             musl: musllinux
-          - os: ubuntu-latest
+          - name: linux-musllinux-ppc64le
+            runs-on: ubuntu-latest
             qemu: ppc64le
             musl: musllinux
-          - os: ubuntu-latest
+          - name: linux-musllinux-armv7l
+            runs-on: ubuntu-latest
             qemu: armv7l
             musl: musllinux
-          - os: ubuntu-latest
-            musl: musllinux
-          - os: ubuntu-24.04-arm
-            musl: musllinux
+
+          - name: android-x86_64
+            runs-on: ubuntu-latest
+            platform: android
+            archs: x86_64
+            qemu: ""
+            musl: ""
+          - name: android-arm64
+            runs-on: ubuntu-latest
+            platform: android
+            archs: arm64_v8a
+            qemu: ""
+            musl: ""
+          - name: ios-arm64
+            runs-on: macos-latest
+            platform: ios
+            archs: arm64_iphoneos
+            qemu: ""
+            musl: ""
+          - name: ios-simulator-arm64
+            runs-on: macos-latest
+            platform: ios
+            archs: arm64_iphonesimulator
+            qemu: ""
+            musl: ""
+          - name: ios-simulator-x86_64
+            runs-on: macos-15-intel
+            platform: ios
+            archs: x86_64_iphonesimulator
+            qemu: ""
+            musl: ""
     steps:
       - uses: actions/checkout@v7
+        with:
+            persist-credentials: false
       - name: Set up QEMU
-        if: runner.os == 'Linux' && runner.arch == 'X64'
-        uses: docker/setup-qemu-action@v4
+        if: runner.os == 'Linux' && runner.arch == 'X64' && matrix.qemu != ''
+        uses: docker/setup-qemu-action@v4.4.0
         with:
           platforms: all
           image: tonistiigi/binfmt:qemu-v8.1.5
@@ -125,6 +185,7 @@ jobs:
       - name: Configure macOS architecture
         if: runner.os == 'macOS'
         run: |
+          echo "MACOSX_DEPLOYMENT_TARGET=13.0" >> $GITHUB_ENV
           if [[ "${{ runner.arch}}" == "ARM64" ]]; then
             echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
           else
@@ -144,17 +205,17 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.3.5
         env:
+          CIBW_PLATFORM: ${{ matrix.platform || 'auto' }}
+          CIBW_ARCHS: ${{ matrix.archs || 'auto' }}
+          ANDROID_API_LEVEL: '24'
+          IPHONEOS_DEPLOYMENT_TARGET: '13.0'
           CIBW_SKIP: pp* ${{ matrix.musl == 'musllinux' && '*manylinux*' || '*musllinux*' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v7
         if: github.event_name != 'pull_request'
         with:
           name: >-
-            pkg-wheels-${{ matrix.os }}-${{ strategy.job-index }}-${{ matrix.musl }}-${{
-              matrix.qemu
-              && matrix.qemu
-              || 'native'
-            }}
+            pkg-wheels-${{ matrix.name }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
 
   release:
